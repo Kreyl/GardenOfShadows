@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--***************************************-->
+<!--   File    : GSSns.fsproj              -->
+<!--   Format  : TopoR Project file        -->
+<!--   Version : 2                         -->
+<!--   Program : TopoR Lite 6.3.17658 Beta -->
+<!--   Date    : Wednesday, May 31, 2017   -->
+<!--   Time    : 23:51                     -->
+<!--***************************************-->
+
+<Project>
+   <Version current="2"/>
+   <GUID>{E008F34A-F521-478E-99A3-2D180D3D5FFF}</GUID>
+   <Documents>
+      <Section name="PCB">
+         <File path=".\GSSns.fsx" isopened="1" dateChange="2017-05-31 21:56:34"/>
+      </Section>
+      <Section name="AutoRouting"/>
+   </Documents>
+</Project>
