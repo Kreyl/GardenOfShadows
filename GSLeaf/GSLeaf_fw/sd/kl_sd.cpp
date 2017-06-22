@@ -30,7 +30,7 @@ void sd_t::Init() {
     // Power pin
     PinSetupOut(SD_PWR_PIN, omPushPull);
     PinSetLo(SD_PWR_PIN); // Power on
-    chThdSleepMilliseconds(270);    // Let power to stabilize
+    chThdSleepMilliseconds(999);    // Let power to stabilize
 
     FRESULT err;
     sdcInit();

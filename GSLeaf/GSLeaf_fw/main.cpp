@@ -16,8 +16,6 @@
 #include "kl_sd.h"
 #include "AuPlayer.h"
 
-#include "alive.h"
-
 // Forever
 EvtMsgQ_t<EvtMsg_t, MAIN_EVT_Q_LEN> EvtQMain;
 extern CmdUart_t Uart;
@@ -60,17 +58,15 @@ int main(void) {
     // Audio
     i2c1.Init();
     Audio.Init();
-//    Audio.SetupAndTransmit((AudioSetup_t){(void*)Buf, 16, Mono});
-//    Audio.SetupAndTransmit((AudioSetup_t){(void*)BufS, 16, Stereo});
-//    Audio.GetStatus();
-    Audio.StartStream();
+//    Audio.StartStream();
 
     SD.Init();
 //    int32_t dw32;
 //    if(SD.iniRead<int32_t>("settings.ini", "radio", "id", &dw32) == retvOk) {
 //        Printf("%d\r", dw32);
 //    }
-//    Player.Play("alive.wav");
+    Player.Init();
+    Player.Play("alive.wav");
 
     // Main cycle
     ITask();
@@ -100,27 +96,8 @@ void ITask() {
 //    }
 //}
 
-uint32_t N = 0;
-const int16_t *ptr = alive.PData;
-
 void AuOnNewSampleI(SampleStereo_t &Sample) {
-//    smp = (smp < 0)? 1500 : -1500;
-//    Sample.Left = 0xFF00;
-//    Sample.Right = 0x55AA;
-//    Sample.Left = Sample.Left * 2;
-//    Sample.Right = 0;
 
-    Sample.Left = *ptr;
-    Sample.Right = *ptr;
-    ptr++;
-    N++;
-    if(N >= alive.FrameCnt) {
-        N = 0;
-        ptr = alive.PData;
-    }
-
-    Audio.PutSampleI(Sample);
-//    if(Sample.Left > 1000 or Sample.Left < -1000) PrintfI("%d\r", Sample.Left);
 }
 
 #endif
