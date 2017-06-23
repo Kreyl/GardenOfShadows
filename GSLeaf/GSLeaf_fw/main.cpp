@@ -119,7 +119,9 @@ void OnCmd(Shell_t *PShell) {
     }
 
     else if(PCmd->NameIs("A")) Player.Play("Alive.wav");
-    else if(PCmd->NameIs("M")) Player.Play("Mocart.wav");
+    else if(PCmd->NameIs("44")) Player.Play("Mocart44.wav");
+    else if(PCmd->NameIs("48")) Player.Play("Mocart48.wav");
+    else if(PCmd->NameIs("96")) Player.Play("Mocart96.wav");
 
 
 

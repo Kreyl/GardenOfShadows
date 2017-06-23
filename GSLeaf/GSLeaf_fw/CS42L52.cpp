@@ -297,10 +297,11 @@ void CS42L52_t::SetupParams(MonoStereo_t MonoStereo, uint32_t SampleRate) {
     AU_SAI_A->CR1 |= (u32)MonoStereo | SAI_xCR1_DMAEN;
     AU_SAI_A->CR2 = SAI_xCR2_FFLUSH | SAI_FIFO_THR; // Flush FIFO
     // Setup sample rate. No Auto, 32kHz, not27MHz
-    uint8_t v = (0b10 << 5) | (1 << 4) | (0 << 3) | (0b01 << 1);    // 16 kHz
+    uint8_t                      v = (0b10 << 5) | (1 << 4) | (0 << 3) | (0b01 << 1);    // 16 kHz
     if     (SampleRate == 22050) v = (0b10 << 5) | (0 << 4) | (0 << 3) | (0b11 << 1);
     else if(SampleRate == 44100) v = (0b01 << 5) | (0 << 4) | (0 << 3) | (0b11 << 1);
     else if(SampleRate == 48000) v = (0b01 << 5) | (0 << 4) | (0 << 3) | (0b01 << 1);
+    else if(SampleRate == 96000) v = (0b00 << 5) | (0 << 4) | (0 << 3) | (0b01 << 1);
     WriteReg(0x05, v);
 //    Printf("v: %X\r", v);
 }

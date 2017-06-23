@@ -11,6 +11,18 @@
 #include "shell.h"
 #include "CS42L52.h"
 
+//#define DBG_PINS
+
+#ifdef DBG_PINS
+#define DBG_GPIO1   GPIOB
+#define DBG_PIN1    13
+#define DBG1_SET()  PinSetHi(DBG_GPIO1, DBG_PIN1)
+#define DBG1_CLR()  PinSetLo(DBG_GPIO1, DBG_PIN1)
+#else
+#define DBG1_SET()
+#define DBG1_CLR()
+#endif
+
 extern CS42L52_t Audio;
 extern AuPlayer_t Player;
 
@@ -34,8 +46,16 @@ static thread_reference_t ThdRef = nullptr;
 extern "C"
 void DmaSAITxIrq(void *p, uint32_t flags) {
     chSysLockFromISR();
-    chThdResumeI(&ThdRef, MSG_OK);
+    Player.IHandleIrq();
     chSysUnlockFromISR();
+}
+
+void AuPlayer_t::IHandleIrq() {
+    if(BufSz != 0) {
+        PCurBuf = (PCurBuf == Buf1)? Buf2 : Buf1;
+        Audio.TransmitBuf(PCurBuf, BufSz);
+    }
+    chThdResumeI(&ThdRef, MSG_OK);
 }
 
 // Thread
@@ -52,20 +72,8 @@ void AuPlayer_t::ITask() {
         chSysLock();
         chThdSuspendS(&ThdRef); // Wait IRQ
         chSysUnlock();
-//        Printf("BufSz: %u; chsz: %u\r", BufSz, Info.ChunkSz);
         if(BufSz != 0) {
-            // Thread resumed, switch buffers
-            uint32_t *PBufToFill;
-            if(PCurBuf == Buf1) {
-                PCurBuf = Buf2;
-                PBufToFill = Buf1;
-            }
-            else {
-                PCurBuf = Buf1;
-                PBufToFill = Buf2;
-            }
-            // Start transmission
-            Audio.TransmitBuf(PCurBuf, BufSz);
+            uint32_t *PBufToFill = (PCurBuf == Buf1)? Buf2 : Buf1;
             // Fill buff
             if(Info.ChunkSz != 0) {
                 BufSz = MIN(Info.ChunkSz, FRAME_BUF_SZ);
@@ -84,6 +92,9 @@ void AuPlayer_t::ITask() {
 }
 
 void AuPlayer_t::Init() {
+#ifdef DBG_PINS
+    PinSetupOut(DBG_GPIO1, DBG_PIN1, omPushPull);
+#endif    // Init radioIC
     chThdCreateStatic(waAudioThread, sizeof(waAudioThread), NORMALPRIO, (tfunc_t)AudioThread, NULL);
 }
 

@@ -10,7 +10,7 @@
 #include "kl_lib.h"
 #include "ff.h"
 
-#define FRAME_BUF_SZ        16384
+#define FRAME_BUF_SZ        4096
 
 class AuPlayer_t {
 private:
@@ -25,5 +25,7 @@ public:
     uint8_t Play(const char* AFileName);
 
     void Rewind();
+    // Inner use
     void ITask();
+    void IHandleIrq();
 };
