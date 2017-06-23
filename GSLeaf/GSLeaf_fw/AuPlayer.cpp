@@ -9,6 +9,10 @@
 #include "AuPlayer.h"
 #include "kl_lib.h"
 #include "shell.h"
+#include "CS42L52.h"
+
+extern CS42L52_t Audio;
+extern AuPlayer_t Player;
 
 struct WavFileInfo_t {
     uint32_t SampleRate;
@@ -20,17 +24,101 @@ struct WavFileInfo_t {
     uint32_t FrameCnt;
     uint32_t Size;
     // Current state
-    uint32_t NextDataChunkOffset, CurDataChunkFrames;
+    uint32_t NextDataChunkOffset, CurDataChunkFrameCnt;
+    uint32_t ChunkSz;
 };
 static WavFileInfo_t Info;
 
+// DMA Tx Completed IRQ
+static thread_reference_t ThdRef = nullptr;
+extern "C"
+void DmaSAITxIrq(void *p, uint32_t flags) {
+    chSysLockFromISR();
+    chThdResumeI(&ThdRef, MSG_OK);
+    chSysUnlockFromISR();
+}
+
+// Thread
+static THD_WORKING_AREA(waAudioThread, 2048);
+__noreturn
+static void AudioThread(void *arg) {
+    chRegSetThreadName("Audio");
+    Player.ITask();
+}
+
+__noreturn
+void AuPlayer_t::ITask() {
+    while(true) {
+        chSysLock();
+        chThdSuspendS(&ThdRef); // Wait IRQ
+        chSysUnlock();
+//        Printf("BufSz: %u; chsz: %u\r", BufSz, Info.ChunkSz);
+        if(BufSz != 0) {
+            // Thread resumed, switch buffers
+            uint32_t *PBufToFill;
+            if(PCurBuf == Buf1) {
+                PCurBuf = Buf2;
+                PBufToFill = Buf1;
+            }
+            else {
+                PCurBuf = Buf1;
+                PBufToFill = Buf2;
+            }
+            // Start transmission
+            Audio.TransmitBuf(PCurBuf, BufSz);
+            // Fill buff
+            if(Info.ChunkSz != 0) {
+                BufSz = MIN(Info.ChunkSz, FRAME_BUF_SZ);
+                if(TryRead(&IFile, PBufToFill, BufSz) != retvOk) {
+                    f_close(&IFile);
+                    BufSz = 0;
+                }
+                Info.ChunkSz -= BufSz;
+            }
+            else BufSz = 0;
+        } // if(BufSz != 0)
+        else {  // End of file
+            f_close(&IFile);
+        }
+    } // while true
+}
 
 void AuPlayer_t::Init() {
-
+    chThdCreateStatic(waAudioThread, sizeof(waAudioThread), NORMALPRIO, (tfunc_t)AudioThread, NULL);
 }
 
 uint8_t AuPlayer_t::Play(const char* AFileName) {
-    return OpenWav(AFileName);
+    // Try to open file
+    if(OpenWav(AFileName) != retvOk) return retvFail;
+    // Setup audio
+    Audio.SetupParams((Info.ChannelCnt == 1)? Mono : Stereo);
+
+    // Fill both buffers
+    char ChunkID[4] = {0, 0, 0, 0};
+
+    if(f_lseek(&IFile, Info.NextDataChunkOffset) != FR_OK) goto end;
+    if(TryRead(&IFile, ChunkID, 4) != retvOk) goto end;
+    if(TryRead<uint32_t>(&IFile, &Info.ChunkSz) != retvOk) goto end;
+
+    if(memcmp(ChunkID, "data", 4) == 0) {  // "data" found
+        // Read first buf
+        PCurBuf = Buf1;
+        BufSz = MIN(Info.ChunkSz, FRAME_BUF_SZ);
+        if(TryRead(&IFile, Buf1, BufSz) != retvOk) goto end;
+        // Start transmission
+        Audio.TransmitBuf(PCurBuf, BufSz);
+        // Read second buf
+        Info.ChunkSz -= BufSz;
+        if(Info.ChunkSz != 0) {
+            BufSz = MIN(Info.ChunkSz, FRAME_BUF_SZ);
+            if(TryRead(&IFile, Buf2, BufSz) != retvOk) goto end;
+            Info.ChunkSz -= BufSz;
+        }
+    }
+    return retvOk;
+    end:
+    f_close(&IFile);
+    return retvFail;
 }
 
 uint8_t AuPlayer_t::OpenWav(const char* AFileName) {
@@ -44,7 +132,6 @@ uint8_t AuPlayer_t::OpenWav(const char* AFileName) {
     if(TryRead(&IFile, ChunkID, 4) != retvOk or (memcmp(ChunkID, "RIFF", 4) != 0)) goto end;
     // Get file size
     if(TryRead<uint32_t>(&IFile, &Info.Size) != retvOk) goto end;
-    Printf("Sz: %u\r", Info.Size);
     // Check riff type
     if(TryRead(&IFile, ChunkID, 4) != retvOk or (memcmp(ChunkID, "WAVE", 4) != 0)) goto end;
     // Check format
@@ -53,8 +140,6 @@ uint8_t AuPlayer_t::OpenWav(const char* AFileName) {
     if(TryRead<uint32_t>(&IFile, &ChunkSz) != retvOk) goto end;
     NextChunkOffset = IFile.fptr + ChunkSz;
     if((NextChunkOffset & 1) != 0) NextChunkOffset++;
-    Printf("NextCh: %u\r", NextChunkOffset);
-
     // Read format
     if(TryRead<uint16_t>(&IFile, &uw16) != retvOk) goto end;
     Printf("Fmt: %X\r", uw16);
@@ -64,16 +149,19 @@ uint8_t AuPlayer_t::OpenWav(const char* AFileName) {
     if(Info.ChannelCnt > 2) goto end;
     // Sample rate
     if(TryRead<uint32_t>(&IFile, &Info.SampleRate) != retvOk) goto end;
-    Printf("SmplRt: %u\r", Info.SampleRate);
     // Bytes per second
     if(TryRead<uint32_t>(&IFile, &Info.BytesPerSecond) != retvOk) goto end;
-    Printf("BytesPerSecond: %u\r", Info.BytesPerSecond);
     // Block alignment == frame sz
-    if(TryRead<uint16_t>(&IFile, &uw16) != retvOk) goto end;
-    Printf("BlkAlgn: %u\r", uw16);
-    Info.FrameSz = uw16;
+    if(TryRead<uint16_t>(&IFile, &Info.FrameSz) != retvOk) goto end;
     // Bits per sample
     if(TryRead<uint16_t>(&IFile, &Info.BitsPerSample) != retvOk) goto end;
+
+    Printf("Sz: %u\r", Info.Size);
+    Printf("NextCh: %u\r", NextChunkOffset);
+    Printf("ChnlCnt: %u\r", Info.ChannelCnt);
+    Printf("SmplRt: %u\r", Info.SampleRate);
+    Printf("BytesPerSecond: %u\r", Info.BytesPerSecond);
+    Printf("BlkAlgn: %u\r", Info.FrameSz);
     Printf("BitsPerSample: %u\r", Info.BitsPerSample);
 
     // Find data chunk
@@ -121,5 +209,5 @@ uint8_t AuPlayer_t::OpenWav(const char* AFileName) {
 
 void AuPlayer_t::Rewind() {
     Info.NextDataChunkOffset = Info.InitialDataChunkOffset;
-    Info.CurDataChunkFrames = 0;
+    Info.CurDataChunkFrameCnt = 0;
 }

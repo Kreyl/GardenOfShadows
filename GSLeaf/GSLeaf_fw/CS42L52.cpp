@@ -124,8 +124,7 @@ static PinOutput_t PinRst(AU_RESET);
                         STM32_DMA_CR_PSIZE_HWORD | \
                         STM32_DMA_CR_MINC |     /* Memory pointer increase */ \
                         STM32_DMA_CR_DIR_M2P |  /* Direction is memory to peripheral */ \
-                        STM32_DMA_CR_CIRC           /* Circular buffer enable */
-//                        STM32_DMA_CR_TCIE       /* Enable Transmission Complete IRQ */
+                        STM32_DMA_CR_TCIE       /* Enable Transmission Complete IRQ */
 
 #define SAI_DMARX_MODE  STM32_DMA_CR_CHSEL(Chnl) |   \
                         DMA_PRIORITY_LOW | \
@@ -138,6 +137,9 @@ static PinOutput_t PinRst(AU_RESET);
 #endif
 
 const PinOutputPWM_t MClk(AU_MCLK_TIM);
+// DMA Tx Completed IRQ
+extern "C"
+void DmaSAITxIrq(void *p, uint32_t flags);
 
 void CS42L52_t::Init() {
     PinRst.Init();
@@ -236,7 +238,7 @@ void CS42L52_t::Init() {
 #endif
 
 #if 1 // ==== DMA ====
-    dmaStreamAllocate(SAI_DMA_A, IRQ_PRIO_MEDIUM, nullptr, nullptr);
+    dmaStreamAllocate(SAI_DMA_A, IRQ_PRIO_MEDIUM, DmaSAITxIrq, nullptr);
     dmaStreamSetPeripheral(SAI_DMA_A, &AU_SAI_A->DR);
 #endif
 }
@@ -278,6 +280,24 @@ uint8_t CS42L52_t::SetPcmMixerVolume(i8 Volume_dB) {
 #endif
 
 #if 1 // ============================= Tx/Rx ===================================
+void CS42L52_t::SetupParams(MonoStereo_t MonoStereo) {
+    DisableSAI();   // All settings must be changed when both blocks are disabled
+    AU_SAI_A->CR1 &= ~SAI_xCR1_MONO;
+    AU_SAI_A->CR1 |= (u32)MonoStereo | SAI_xCR1_DMAEN;
+    AU_SAI_A->CR2 = SAI_xCR2_FFLUSH | SAI_FIFO_THR; // Flush FIFO
+}
+
+void CS42L52_t::TransmitBuf(void *Buf, uint32_t Sz) {
+    dmaStreamDisable(SAI_DMA_A);
+    dmaStreamSetMode(SAI_DMA_A, SAI_DMATX_MODE);
+    dmaStreamSetMemory0(SAI_DMA_A, Buf);
+    // Mono or stereo? 2 bytes or 4 bytes?
+    u32 TxSz = (AU_SAI_A->CR1 & SAI_xCR1_MONO)? (Sz / 2) : (Sz / 4);
+    dmaStreamSetTransactionSize(SAI_DMA_A, TxSz);
+    dmaStreamEnable(SAI_DMA_A);
+    EnableSAI();            // Start tx
+}
+
 void CS42L52_t::SetupAndTransmit(AudioSetup_t ASetup) {
     DisableSAI();   // All settings must be changed when both blocks are disabled
     AU_SAI_A->CR1 &= ~SAI_xCR1_MONO;

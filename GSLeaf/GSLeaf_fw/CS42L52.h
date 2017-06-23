@@ -65,6 +65,9 @@ public:
     u8 SetHeadphoneVolume(i8 Volume_dB);
     u8 SetSpeakerVolume(i8 Volume_dB);
     // Rx/Tx
+    void SetupParams(MonoStereo_t MonoStereo);
+    void TransmitBuf(void *Buf, uint32_t Sz);
+
     void SetupAndTransmit(AudioSetup_t ASetup);
     void StartStream();
     void PutSampleI(SampleStereo_t &Sample);
