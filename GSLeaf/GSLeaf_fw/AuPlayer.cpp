@@ -91,7 +91,7 @@ uint8_t AuPlayer_t::Play(const char* AFileName) {
     // Try to open file
     if(OpenWav(AFileName) != retvOk) return retvFail;
     // Setup audio
-    Audio.SetupParams((Info.ChannelCnt == 1)? Mono : Stereo);
+    Audio.SetupParams((Info.ChannelCnt == 1)? Mono : Stereo, Info.SampleRate);
 
     // Fill both buffers
     char ChunkID[4] = {0, 0, 0, 0};
@@ -99,7 +99,6 @@ uint8_t AuPlayer_t::Play(const char* AFileName) {
     if(f_lseek(&IFile, Info.NextDataChunkOffset) != FR_OK) goto end;
     if(TryRead(&IFile, ChunkID, 4) != retvOk) goto end;
     if(TryRead<uint32_t>(&IFile, &Info.ChunkSz) != retvOk) goto end;
-
     if(memcmp(ChunkID, "data", 4) == 0) {  // "data" found
         // Read first buf
         PCurBuf = Buf1;
@@ -184,14 +183,18 @@ uint8_t AuPlayer_t::OpenWav(const char* AFileName) {
 
         if(memcmp(ChunkID, "LIST", 4) == 0) {  // "LIST" found
             if(TryRead(&IFile, ChunkID, 4) != retvOk) goto end;
-            if(memcmp(ChunkID, "wavl", 4) != 0) goto end;
-            // Calc offsets
-            Info.InitialDataChunkOffset = IFile.fptr;   // Here is "data", definitely
-            if((Info.InitialDataChunkOffset & 1) != 0) Info.InitialDataChunkOffset++;
-            Info.FinalDataChunkOffset = IFile.fptr + ChunkSz;
-            if((Info.FinalDataChunkOffset & 1) != 0) Info.FinalDataChunkOffset++;
-            Printf("DataStart: %u; DataEnd: %u\r", Info.InitialDataChunkOffset, Info.FinalDataChunkOffset);
-            break;
+            if(memcmp(ChunkID, "wavl", 4) == 0) {
+                // Calc offsets
+                Info.InitialDataChunkOffset = IFile.fptr;   // Here is "data", definitely
+                if((Info.InitialDataChunkOffset & 1) != 0) Info.InitialDataChunkOffset++;
+                Info.FinalDataChunkOffset = IFile.fptr + ChunkSz;
+                if((Info.FinalDataChunkOffset & 1) != 0) Info.FinalDataChunkOffset++;
+                Printf("DataStart: %u; DataEnd: %u\r", Info.InitialDataChunkOffset, Info.FinalDataChunkOffset);
+                break;
+            }
+            else {  // Not wavl, so skip LIST alltogether
+                ChunkSz -= 4;   // take in account 4 bytes of chunk type that just was read
+            }
         }
 
         // Proceed with data search

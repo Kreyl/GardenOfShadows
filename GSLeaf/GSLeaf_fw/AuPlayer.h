@@ -10,7 +10,7 @@
 #include "kl_lib.h"
 #include "ff.h"
 
-#define FRAME_BUF_SZ        8192
+#define FRAME_BUF_SZ        16384
 
 class AuPlayer_t {
 private:

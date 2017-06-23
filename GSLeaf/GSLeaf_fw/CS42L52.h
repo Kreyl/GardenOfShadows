@@ -29,12 +29,6 @@ typedef int16_t SampleMono_t;
 
 enum MonoStereo_t { Stereo = 0, Mono = (1 << 12) };
 
-struct AudioSetup_t {
-    void *Buf;
-    u32 SampleCnt;
-    MonoStereo_t MonoStereo;
-};
-
 class CS42L52_t {
 private:
     void EnableSAI() { AU_SAI_A->CR1 |= SAI_xCR1_SAIEN; AU_SAI_B->CR1 |= SAI_xCR1_SAIEN; }
@@ -65,10 +59,9 @@ public:
     u8 SetHeadphoneVolume(i8 Volume_dB);
     u8 SetSpeakerVolume(i8 Volume_dB);
     // Rx/Tx
-    void SetupParams(MonoStereo_t MonoStereo);
+    void SetupParams(MonoStereo_t MonoStereo, uint32_t SampleRate);
     void TransmitBuf(void *Buf, uint32_t Sz);
 
-    void SetupAndTransmit(AudioSetup_t ASetup);
     void StartStream();
     void PutSampleI(SampleStereo_t &Sample);
 #if AU_BATMON_ENABLE

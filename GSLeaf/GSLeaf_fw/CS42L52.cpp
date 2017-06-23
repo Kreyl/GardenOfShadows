@@ -118,10 +118,20 @@ static PinOutput_t PinRst(AU_RESET);
 #define SAI_SLAVE_TX            (SAI_xCR1_MODE_1)
 #define SAI_SLAVE_RX            (SAI_xCR1_MODE_1 | SAI_xCR1_MODE_0)
 
-#define SAI_DMATX_MODE  STM32_DMA_CR_CHSEL(SAI_DMA_CHNL) |   \
+#define SAI_DMATX_MONO_MODE  \
+                        STM32_DMA_CR_CHSEL(SAI_DMA_CHNL) |   \
                         DMA_PRIORITY_MEDIUM | \
                         STM32_DMA_CR_MSIZE_HWORD | \
                         STM32_DMA_CR_PSIZE_HWORD | \
+                        STM32_DMA_CR_MINC |     /* Memory pointer increase */ \
+                        STM32_DMA_CR_DIR_M2P |  /* Direction is memory to peripheral */ \
+                        STM32_DMA_CR_TCIE       /* Enable Transmission Complete IRQ */
+
+#define SAI_DMATX_STEREO_MODE  \
+                        STM32_DMA_CR_CHSEL(SAI_DMA_CHNL) |   \
+                        DMA_PRIORITY_MEDIUM | \
+                        STM32_DMA_CR_MSIZE_WORD | \
+                        STM32_DMA_CR_PSIZE_WORD | \
                         STM32_DMA_CR_MINC |     /* Memory pointer increase */ \
                         STM32_DMA_CR_DIR_M2P |  /* Direction is memory to peripheral */ \
                         STM32_DMA_CR_TCIE       /* Enable Transmission Complete IRQ */
@@ -156,10 +166,9 @@ void CS42L52_t::Init() {
     // PwrCtrl 2:
     WriteReg(CS_R_PWR_CTRL2, CS_PWR_ON_MIC_A | CS_PWR_DOWN_MIC_B | CS_PWR_ON_BIAS);
     // PwrCtrl 3: Hph A & B are always on, spkrs always off
-//    WriteReg(0x04, 0b10101111);
-    WriteReg(0x04, 0b10101010); // spkrs always on
-    // Clocking Control: Auto, 32kHz, not27MHz, ratio 128/64, no MCLK divide
-//    WriteReg(0x05, 0b10110000);
+    WriteReg(0x04, 0b10101111);
+//    WriteReg(0x04, 0b10101010); // spkrs always on
+    // Clocking Control: no Auto, 32kHz, not27MHz, ratio 128/64, no MCLK divide
     WriteReg(0x05, (0 << 7) | (0b10 << 5) | (1 << 4) | (0 << 3) | (0b01 << 1));
     // Interface Control 1: Slave, SCLK not inverted, ADC output=LeftJ, DSP mode disabled, DAC input=LeftJ, WordLen=16
 //    WriteReg(0x06, 0b00000011);
@@ -223,7 +232,7 @@ void CS42L52_t::Init() {
     // === Setup SAI_A as async Slave Transmitter ===
     // Stereo mode, Async, MSB first, Rising edge, Data Sz = 16bit, Free protocol, Slave Tx
     AU_SAI_A->CR1 = SAI_SYNC_ASYNC | SAI_RISING_EDGE | SAI_CR1_DATASZ_16BIT | SAI_SLAVE_TX;
-    // No offset, FS Active Low, FS Active Lvl Len = 1, Frame Len = 62
+    // No offset, FS Active Low, FS Active Lvl Len = 1, Frame Len = 32
     AU_SAI_A->FRCR = ((1 - 1) << 8) | (62 - 1);
     // 0 & 1 slots en, N slots = 2, slot size = 16bit, no offset
     AU_SAI_A->SLOTR = SAI_SlotActive_0 | SAI_SlotActive_1 | ((SAI_SLOT_CNT - 1) << 8) | SAI_SLOTSZ_16bit;
@@ -280,38 +289,29 @@ uint8_t CS42L52_t::SetPcmMixerVolume(i8 Volume_dB) {
 #endif
 
 #if 1 // ============================= Tx/Rx ===================================
-void CS42L52_t::SetupParams(MonoStereo_t MonoStereo) {
+void CS42L52_t::SetupParams(MonoStereo_t MonoStereo, uint32_t SampleRate) {
+    dmaStreamDisable(SAI_DMA_A);
     DisableSAI();   // All settings must be changed when both blocks are disabled
+    // Setup mono/stereo and enable DMA
     AU_SAI_A->CR1 &= ~SAI_xCR1_MONO;
     AU_SAI_A->CR1 |= (u32)MonoStereo | SAI_xCR1_DMAEN;
     AU_SAI_A->CR2 = SAI_xCR2_FFLUSH | SAI_FIFO_THR; // Flush FIFO
+    // Setup sample rate. No Auto, 32kHz, not27MHz
+    uint8_t v = (0b10 << 5) | (1 << 4) | (0 << 3) | (0b01 << 1);    // 16 kHz
+    if     (SampleRate == 22050) v = (0b10 << 5) | (0 << 4) | (0 << 3) | (0b11 << 1);
+    else if(SampleRate == 44100) v = (0b01 << 5) | (0 << 4) | (0 << 3) | (0b11 << 1);
+    else if(SampleRate == 48000) v = (0b01 << 5) | (0 << 4) | (0 << 3) | (0b01 << 1);
+    WriteReg(0x05, v);
+//    Printf("v: %X\r", v);
 }
 
 void CS42L52_t::TransmitBuf(void *Buf, uint32_t Sz) {
     dmaStreamDisable(SAI_DMA_A);
-    dmaStreamSetMode(SAI_DMA_A, SAI_DMATX_MODE);
     dmaStreamSetMemory0(SAI_DMA_A, Buf);
-    // Mono or stereo? 2 bytes or 4 bytes?
-    u32 TxSz = (AU_SAI_A->CR1 & SAI_xCR1_MONO)? (Sz / 2) : (Sz / 4);
-    dmaStreamSetTransactionSize(SAI_DMA_A, TxSz);
+    dmaStreamSetMode(SAI_DMA_A, SAI_DMATX_MONO_MODE);
+    dmaStreamSetTransactionSize(SAI_DMA_A, (Sz / 2));
     dmaStreamEnable(SAI_DMA_A);
     EnableSAI();            // Start tx
-}
-
-void CS42L52_t::SetupAndTransmit(AudioSetup_t ASetup) {
-    DisableSAI();   // All settings must be changed when both blocks are disabled
-    AU_SAI_A->CR1 &= ~SAI_xCR1_MONO;
-    AU_SAI_A->CR1 |= (u32)ASetup.MonoStereo | SAI_xCR1_DMAEN;
-    AU_SAI_A->CR2 = SAI_xCR2_FFLUSH | SAI_FIFO_THR; // Flush FIFO
-    AU_SAI_B->IMR = 0;  // No irq on RX
-    // DMA
-    dmaStreamSetMode(SAI_DMA_A, SAI_DMATX_MODE);
-    dmaStreamSetMemory0(SAI_DMA_A, ASetup.Buf);
-    u32 Sz = (ASetup.MonoStereo == Stereo)? ASetup.SampleCnt * 2 : ASetup.SampleCnt;
-    dmaStreamSetTransactionSize(SAI_DMA_A, Sz);
-    dmaStreamEnable(SAI_DMA_A);
-    // Start tx
-    EnableSAI();
 }
 
 void CS42L52_t::StartStream() {

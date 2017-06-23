@@ -66,7 +66,8 @@ int main(void) {
 //        Printf("%d\r", dw32);
 //    }
     Player.Init();
-    Player.Play("alive.wav");
+//    Player.Play("alive.wav");
+//    Player.Play("Mocart.wav");
 
     // Main cycle
     ITask();
@@ -116,6 +117,9 @@ void OnCmd(Shell_t *PShell) {
         if(PCmd->GetNext<int8_t>(&v) != retvOk) { PShell->Ack(retvCmdError); return; }
         Audio.SetMasterVolume(v);
     }
+
+    else if(PCmd->NameIs("A")) Player.Play("Alive.wav");
+    else if(PCmd->NameIs("M")) Player.Play("Mocart.wav");
 
 
 
