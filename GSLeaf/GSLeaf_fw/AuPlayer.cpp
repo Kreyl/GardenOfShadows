@@ -34,7 +34,7 @@ static thread_reference_t ThdRef = nullptr;
 extern "C"
 void DmaSAITxIrq(void *p, uint32_t flags) {
     chSysLockFromISR();
-    chThdResumeI(&ThdRef, MSG_OK);
+    chThdResumeI(&ThdRef, (msg_t)flags);
     chSysUnlockFromISR();
 }
 
@@ -50,35 +50,39 @@ __noreturn
 void AuPlayer_t::ITask() {
     while(true) {
         chSysLock();
-        chThdSuspendS(&ThdRef); // Wait IRQ
+        uint32_t flags = (uint32_t)chThdSuspendS(&ThdRef); // Wait IRQ
         chSysUnlock();
-//        Printf("BufSz: %u; chsz: %u\r", BufSz, Info.ChunkSz);
-        if(BufSz != 0) {
-            // Thread resumed, switch buffers
-            uint32_t *PBufToFill;
-            if(PCurBuf == Buf1) {
-                PCurBuf = Buf2;
-                PBufToFill = Buf1;
-            }
-            else {
-                PCurBuf = Buf1;
-                PBufToFill = Buf2;
-            }
-            // Start transmission
-            Audio.TransmitBuf(PCurBuf, BufSz);
-            // Fill buff
-            if(Info.ChunkSz != 0) {
-                BufSz = MIN(Info.ChunkSz, FRAME_BUF_SZ);
-                if(TryRead(&IFile, PBufToFill, BufSz) != retvOk) {
-                    f_close(&IFile);
-                    BufSz = 0;
-                }
-                Info.ChunkSz -= BufSz;
-            }
-            else BufSz = 0;
-        } // if(BufSz != 0)
-        else {  // End of file
+        Printf("\rSFlags: %X\r", flags);
+        Printf("chsz: %u\r", Info.ChunkSz);
+        Printf("Bttx: %u\r", BytesToTransmit);
+
+        // If nothing to transmit, stop
+        if(BytesToTransmit == 0) {
             f_close(&IFile);
+            Audio.Stop();
+            Printf("Stop\r");
+        }
+        else {
+            BytesToTransmit = MIN(Info.ChunkSz, FRAME_BUF_SZ/2);
+            Printf("Bttx: %u\r", BytesToTransmit);
+            if(BytesToTransmit != 0) {
+                uint32_t *PBufToFill;
+                // If this is half tranfer, fill first half of buffer
+                if(flags & DMA_ISR_HTIF1) PBufToFill = Buf;
+                // Otherwise, fill last half of buffer
+                else PBufToFill = &Buf[(FRAME_BUF_SZ/2)];
+
+                if(TryRead(&IFile, PBufToFill, BytesToTransmit) != retvOk) Info.ChunkSz = 0;
+                else {
+                    Printf("a\r");
+                    Info.ChunkSz -= BytesToTransmit;
+                    // Fill what left with zeroes
+                    if(BytesToTransmit < (FRAME_BUF_SZ/2)) {
+                        memset(&PBufToFill[BytesToTransmit], 0, ((FRAME_BUF_SZ/2) - BytesToTransmit));
+                        if(flags & DMA_ISR_HTIF1) memset(&PBufToFill[(FRAME_BUF_SZ/2)], 0, (FRAME_BUF_SZ/2));
+                    }
+                }
+            }
         }
     } // while true
 }
@@ -88,7 +92,7 @@ void AuPlayer_t::Init() {
 }
 
 uint8_t AuPlayer_t::Play(const char* AFileName) {
-    // Try to open file
+    // Try to open file (read params and get pointer to data)
     if(OpenWav(AFileName) != retvOk) return retvFail;
     // Setup audio
     Audio.SetupParams((Info.ChannelCnt == 1)? Mono : Stereo, Info.SampleRate);
@@ -100,19 +104,12 @@ uint8_t AuPlayer_t::Play(const char* AFileName) {
     if(TryRead(&IFile, ChunkID, 4) != retvOk) goto end;
     if(TryRead<uint32_t>(&IFile, &Info.ChunkSz) != retvOk) goto end;
     if(memcmp(ChunkID, "data", 4) == 0) {  // "data" found
-        // Read first buf
-        PCurBuf = Buf1;
-        BufSz = MIN(Info.ChunkSz, FRAME_BUF_SZ);
-        if(TryRead(&IFile, Buf1, BufSz) != retvOk) goto end;
+        // Read to buf
+        BytesToTransmit = MIN(Info.ChunkSz, FRAME_BUF_SZ);
+        if(TryRead(&IFile, Buf, BytesToTransmit) != retvOk) goto end;
+        Info.ChunkSz -= BytesToTransmit;
         // Start transmission
-        Audio.TransmitBuf(PCurBuf, BufSz);
-        // Read second buf
-        Info.ChunkSz -= BufSz;
-        if(Info.ChunkSz != 0) {
-            BufSz = MIN(Info.ChunkSz, FRAME_BUF_SZ);
-            if(TryRead(&IFile, Buf2, BufSz) != retvOk) goto end;
-            Info.ChunkSz -= BufSz;
-        }
+        Audio.TransmitBuf(Buf, BytesToTransmit);
     }
     return retvOk;
     end:

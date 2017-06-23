@@ -15,15 +15,13 @@
 class AuPlayer_t {
 private:
     FIL IFile;
-    uint32_t Buf1[(FRAME_BUF_SZ/4)], Buf2[(FRAME_BUF_SZ/4)], *PCurBuf, BufSz;
+    uint32_t Buf[(FRAME_BUF_SZ/4)], *PCurBuf;
     uint8_t OpenWav(const char* AFileName);
-//    uint8_t ReadNextWavFrames
-
+    uint32_t BytesToTransmit;
 public:
     void Init();
-
     uint8_t Play(const char* AFileName);
-
+    void Stop();
     void Rewind();
     void ITask();
 };

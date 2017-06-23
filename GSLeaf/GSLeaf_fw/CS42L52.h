@@ -61,6 +61,7 @@ public:
     // Rx/Tx
     void SetupParams(MonoStereo_t MonoStereo, uint32_t SampleRate);
     void TransmitBuf(void *Buf, uint32_t Sz);
+    void Stop();
 
     void StartStream();
     void PutSampleI(SampleStereo_t &Sample);

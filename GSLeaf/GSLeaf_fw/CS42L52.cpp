@@ -118,23 +118,16 @@ static PinOutput_t PinRst(AU_RESET);
 #define SAI_SLAVE_TX            (SAI_xCR1_MODE_1)
 #define SAI_SLAVE_RX            (SAI_xCR1_MODE_1 | SAI_xCR1_MODE_0)
 
-#define SAI_DMATX_MONO_MODE  \
+#define SAI_DMATX_MODE  \
                         STM32_DMA_CR_CHSEL(SAI_DMA_CHNL) |   \
                         DMA_PRIORITY_MEDIUM | \
                         STM32_DMA_CR_MSIZE_HWORD | \
                         STM32_DMA_CR_PSIZE_HWORD | \
                         STM32_DMA_CR_MINC |     /* Memory pointer increase */ \
                         STM32_DMA_CR_DIR_M2P |  /* Direction is memory to peripheral */ \
-                        STM32_DMA_CR_TCIE       /* Enable Transmission Complete IRQ */
-
-#define SAI_DMATX_STEREO_MODE  \
-                        STM32_DMA_CR_CHSEL(SAI_DMA_CHNL) |   \
-                        DMA_PRIORITY_MEDIUM | \
-                        STM32_DMA_CR_MSIZE_WORD | \
-                        STM32_DMA_CR_PSIZE_WORD | \
-                        STM32_DMA_CR_MINC |     /* Memory pointer increase */ \
-                        STM32_DMA_CR_DIR_M2P |  /* Direction is memory to peripheral */ \
-                        STM32_DMA_CR_TCIE       /* Enable Transmission Complete IRQ */
+                        STM32_DMA_CR_HTIE |     /* Enable HalfTransmit IRQ */ \
+                        STM32_DMA_CR_TCIE |     /* Enable Transmission Complete IRQ */ \
+                        STM32_DMA_CR_CIRC       /* Circular buffer enable */
 
 #define SAI_DMARX_MODE  STM32_DMA_CR_CHSEL(Chnl) |   \
                         DMA_PRIORITY_LOW | \
@@ -308,10 +301,15 @@ void CS42L52_t::SetupParams(MonoStereo_t MonoStereo, uint32_t SampleRate) {
 void CS42L52_t::TransmitBuf(void *Buf, uint32_t Sz) {
     dmaStreamDisable(SAI_DMA_A);
     dmaStreamSetMemory0(SAI_DMA_A, Buf);
-    dmaStreamSetMode(SAI_DMA_A, SAI_DMATX_MONO_MODE);
+    dmaStreamSetMode(SAI_DMA_A, SAI_DMATX_MODE);
     dmaStreamSetTransactionSize(SAI_DMA_A, (Sz / 2));
     dmaStreamEnable(SAI_DMA_A);
     EnableSAI();            // Start tx
+}
+
+void CS42L52_t::Stop() {
+    dmaStreamDisable(SAI_DMA_A);
+    DisableSAI();
 }
 
 void CS42L52_t::StartStream() {
