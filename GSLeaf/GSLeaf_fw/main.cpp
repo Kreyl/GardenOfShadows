@@ -11,7 +11,7 @@
 #include "Sequences.h"
 #include "shell.h"
 #include "led.h"
-//#include "SimpleSensors.h"
+#include "SimpleSensors.h"
 #include "CS42L52.h"
 #include "kl_sd.h"
 #include "AuPlayer.h"
@@ -25,11 +25,7 @@ void ITask();
 LedRGB_t Led { LED_RED_CH, LED_GREEN_CH, LED_BLUE_CH };
 PinOutput_t PwrEn(PWR_EN_PIN);
 CS42L52_t Audio;
-
 AuPlayer_t Player;
-
-//static THD_WORKING_AREA(waAudioThread, 256);
-//__noreturn static void AudioThread(void *arg);
 
 int main(void) {
     // ==== Setup clock frequency ====
@@ -66,8 +62,9 @@ int main(void) {
 //        Printf("%d\r", dw32);
 //    }
     Player.Init();
-//    Player.Play("alive.wav");
-//    Player.Play("Mocart.wav");
+    Player.Play("alive.wav");
+
+    SimpleSensors::Init();
 
     // Main cycle
     ITask();
@@ -78,6 +75,10 @@ void ITask() {
     while(true) {
         EvtMsg_t Msg = EvtQMain.Fetch(TIME_INFINITE);
         switch(Msg.ID) {
+            case evtIdButtons:
+                Printf("Btn %u\r", Msg.BtnEvtInfo.BtnID);
+                break;
+
             case evtIdShellCmd:
                 OnCmd((Shell_t*)Msg.Ptr);
                 ((Shell_t*)Msg.Ptr)->SignalCmdProcessed();
@@ -89,18 +90,9 @@ void ITask() {
 }
 
 #if 1 // ========================== Audio processing ===========================
-//void AudioThread(void *arg) {
-//    chRegSetThreadName("Audio");
-//    while(true) {
-//        chSysLock();
-//        SampleStereo_t Sample = AuOnNewSampeI();
-//    }
-//}
-
 void AuOnNewSampleI(SampleStereo_t &Sample) {
 
 }
-
 #endif
 
 #if 1 // ======================= Command processing ============================

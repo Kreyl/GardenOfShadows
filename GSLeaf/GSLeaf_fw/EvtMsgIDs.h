@@ -14,6 +14,5 @@ enum EvtMsgId_t {
     evtIdShellCmd = 1,
     evtIdEverySecond = 2,
 
-    evtIdByteCmd = 11,
-
+    evtIdButtons = 15,
 };
