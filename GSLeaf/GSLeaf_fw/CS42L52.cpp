@@ -223,7 +223,7 @@ void CS42L52_t::Init() {
     PinSetupAlterFunc(AU_SDIN); // SAI_A is Master Receiver
     PinSetupAlterFunc(AU_SDOUT); // SAI_B is Master Transmitter
     MClk.Init();
-    MClk.Set(2);
+    MClk.Set(1);
 
     DisableSAI();   // All settings must be changed when both blocks are disabled
     // Sync setup: SaiA async, SaiB sync
