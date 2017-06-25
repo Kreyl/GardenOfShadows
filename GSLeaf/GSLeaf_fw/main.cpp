@@ -11,7 +11,6 @@
 #include "Sequences.h"
 #include "shell.h"
 #include "led.h"
-#include "SimpleSensors.h"
 #include "CS42L52.h"
 #include "kl_sd.h"
 #include "AuPlayer.h"
@@ -54,7 +53,8 @@ int main(void) {
     // Audio
     i2c1.Init();
     Audio.Init();
-//    Audio.StartStream();
+    Audio.DisableHeadphones();
+    Audio.EnableSpeakerMono();
 
     SD.Init();
 //    int32_t dw32;
@@ -62,9 +62,8 @@ int main(void) {
 //        Printf("%d\r", dw32);
 //    }
     Player.Init();
-    Player.Play("alive.wav");
 
-    SimpleSensors::Init();
+    Player.Play("alive.wav");
 
     // Main cycle
     ITask();
@@ -75,10 +74,6 @@ void ITask() {
     while(true) {
         EvtMsg_t Msg = EvtQMain.Fetch(TIME_INFINITE);
         switch(Msg.ID) {
-            case evtIdButtons:
-                Printf("Btn %u\r", Msg.BtnEvtInfo.BtnID);
-                break;
-
             case evtIdShellCmd:
                 OnCmd((Shell_t*)Msg.Ptr);
                 ((Shell_t*)Msg.Ptr)->SignalCmdProcessed();
@@ -88,12 +83,6 @@ void ITask() {
         } // switch
     } // while true
 }
-
-#if 1 // ========================== Audio processing ===========================
-void AuOnNewSampleI(SampleStereo_t &Sample) {
-
-}
-#endif
 
 #if 1 // ======================= Command processing ============================
 void OnCmd(Shell_t *PShell) {

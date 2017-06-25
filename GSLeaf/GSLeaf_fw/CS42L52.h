@@ -58,6 +58,13 @@ public:
     u8 SetMasterVolume(i8 Volume_dB);
     u8 SetHeadphoneVolume(i8 Volume_dB);
     u8 SetSpeakerVolume(i8 Volume_dB);
+    // Enable/Disable
+    void EnableMicSystem();
+    void DisableMicSystem();
+    void EnableHeadphones();
+    void DisableHeadphones();
+    void EnableSpeakerMono();
+    void DisableSpeakers();
     // Rx/Tx
     void SetupParams(MonoStereo_t MonoStereo, uint32_t SampleRate);
     void TransmitBuf(void *Buf, uint32_t Sz);

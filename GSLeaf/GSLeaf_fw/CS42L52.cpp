@@ -11,10 +11,12 @@
 
 static PinOutput_t PinRst(AU_RESET);
 
+__attribute__((weak))
+void AuOnNewSampleI(SampleStereo_t &Sample) { }
+
 #if 1 // ============================= CS Defines ==============================
 #define CS_R_PWR_CTRL1          0x02
 #define CS_PWR_DOWN_ADCA        (1<<1)
-
 
 #define CS_R_PWR_CTRL2          0x03
 #define CS_PWR_DOWN_MIC_A       (1<<1)
@@ -23,6 +25,8 @@ static PinOutput_t PinRst(AU_RESET);
 #define CS_PWR_ON_MIC_A         (0<<1)
 #define CS_PWR_ON_MIC_B         (0<<2)
 #define CS_PWR_ON_BIAS          (0<<0)
+
+#define CS_R_PWR_CTRL3          0x04
 
 #define CS_R_INPUT_SELECT_A     0x08
 #define CS_R_INPUT_SELECT_B     0x09
@@ -161,17 +165,15 @@ void CS42L52_t::Init() {
     if(r != retvOk) { Printf("CS42L52: read fail (%u)\r", r); return; }
     if(b != 0xE3) { Printf("CS42L52: wrong ID %X\r", b); return; }
 #if 1 // === Setup registers ===
-    // PwrCtrl 1: Power on everything
-    WriteReg(CS_R_PWR_CTRL1, 0);
-    // PwrCtrl 2:
-    WriteReg(CS_R_PWR_CTRL2, CS_PWR_ON_MIC_A | CS_PWR_DOWN_MIC_B | CS_PWR_ON_BIAS);
-    // PwrCtrl 3: Hph A & B are always on, spkrs always off
-    WriteReg(0x04, 0b10101111);
-//    WriteReg(0x04, 0b10101010); // spkrs always on
+    // PwrCtrl 1: Power on codec only
+    WriteReg(CS_R_PWR_CTRL1, 0b11111110);
+    // PwrCtrl 2: Mic power down
+    WriteReg(CS_R_PWR_CTRL2, CS_PWR_DOWN_MIC_A | CS_PWR_DOWN_MIC_B | CS_PWR_DOWN_BIAS);
+    // PwrCtrl 3: Everything is off
+    WriteReg(CS_R_PWR_CTRL3, 0xFF);
     // Clocking Control: no Auto, 32kHz, not27MHz, ratio 128/64, no MCLK divide
     WriteReg(0x05, (0 << 7) | (0b10 << 5) | (1 << 4) | (0 << 3) | (0b01 << 1));
-    // Interface Control 1: Slave, SCLK not inverted, ADC output=LeftJ, DSP mode disabled, DAC input=LeftJ, WordLen=16
-//    WriteReg(0x06, 0b00000011);
+    // Interface Control 1: Master, SCLK not inverted, ADC output=LeftJ, DSP mode en, DAC input=LeftJ, WordLen=16
     WriteReg(0x06, (1<<7) | (0<<5) | (1<<4) | (0b00<<2) | 0b11);
     // Interface Control 2: DigLoop disabled, no 3-state, spk/hph not inverted, MicBias=0.8VAA = 0.8*2.5 = 2V
     WriteReg(0x07, 0b00000011);
@@ -188,7 +190,7 @@ void CS42L52_t::Init() {
     WriteReg(0x0D, 0b01100000);
     // Miscellaneous Controls: Passthrough Analog dis, Passthrough Mute dis, no freeze, De-emphasis dis, Digital soft ramp en, zero-cross dis
     WriteReg(0x0E, 0b00000010);
-    //# Playback Control 2: HPA & HPB mute dis, SpkA & SpkB mute dis, SPKB=A dis, Spk swap dis, Spk Mono dis, Spk Mute 50/50 dis
+    // Playback Control 2: HPA & HPB mute dis, SpkA & SpkB mute dis, SPKB=A dis, Spk swap dis, Spk Mono dis, Spk Mute 50/50 dis
 //    WriteReg(0x0F, 0b00000000);
     WriteReg(0x0F, 0b00000010); // Spk mono en
 
@@ -410,6 +412,48 @@ u8 CS42L52_t::SetSpeakerVolume(i8 Volume_dB) {
     if(Volume_dB < -96 or Volume_dB > 0) return retvBadValue;
     Volume_dB *= 2; // 0.5dB step
     return WriteTwoTheSame(0x24, Volume_dB);
+}
+#endif
+
+#if 1 // ========================= Enable/Disable ==============================
+void CS42L52_t::EnableMicSystem() {
+    WriteReg(CS_R_PWR_CTRL1, 0); // Power on charge pump, PGA and ADC
+    WriteReg(CS_R_PWR_CTRL2, CS_PWR_ON_MIC_A | CS_PWR_DOWN_MIC_B | CS_PWR_ON_BIAS);
+}
+void CS42L52_t::DisableMicSystem() {
+    WriteReg(CS_R_PWR_CTRL1, 0b11111110); // Power on codec only
+    WriteReg(CS_R_PWR_CTRL2, CS_PWR_DOWN_MIC_A | CS_PWR_DOWN_MIC_B | CS_PWR_DOWN_BIAS);
+}
+
+void CS42L52_t::EnableHeadphones() {
+    u8 Reg = 0;
+    ReadReg(CS_R_PWR_CTRL3, &Reg);
+    Reg &= 0x0F;        // Clear headphones ctrl bits
+    Reg |= 0b10100000;  // Headphones always on
+    WriteReg(CS_R_PWR_CTRL3, Reg);
+}
+
+void CS42L52_t::DisableHeadphones() {
+    u8 Reg = 0;
+    ReadReg(CS_R_PWR_CTRL3, &Reg);
+    Reg |= 0b11110000;  // Headphones always off
+    WriteReg(CS_R_PWR_CTRL3, Reg);
+}
+
+void CS42L52_t::EnableSpeakerMono() {
+    u8 Reg = 0;
+    ReadReg(CS_R_PWR_CTRL3, &Reg);
+    Reg &= 0xF0;        // Clear speaker ctrl bits
+    Reg |= 0b00001010;  // SpeakerA En , SpeakerB En (will not work otherwise)
+    WriteReg(CS_R_PWR_CTRL3, Reg);
+    WriteReg(0x0F, 0b00000010); // Spk mono en
+}
+
+void CS42L52_t::DisableSpeakers() {
+    u8 Reg = 0;
+    ReadReg(CS_R_PWR_CTRL3, &Reg);
+    Reg |= 0b00001111;  // Speakers always off
+    WriteReg(CS_R_PWR_CTRL3, Reg);
 }
 #endif
 
