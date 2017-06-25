@@ -53,6 +53,7 @@ int main(void) {
     // Audio
     i2c1.Init();
     Audio.Init();
+    Audio.SetSpeakerVolume(-96);
     Audio.DisableHeadphones();
     Audio.EnableSpeakerMono();
 
@@ -62,6 +63,7 @@ int main(void) {
 //        Printf("%d\r", dw32);
 //    }
     Player.Init();
+    Audio.SetSpeakerVolume(-10);
 
     Player.Play("alive.wav");
 
@@ -98,12 +100,16 @@ void OnCmd(Shell_t *PShell) {
         if(PCmd->GetNext<int8_t>(&v) != retvOk) { PShell->Ack(retvCmdError); return; }
         Audio.SetMasterVolume(v);
     }
+    else if(PCmd->NameIs("SV")) {
+        int8_t v;
+        if(PCmd->GetNext<int8_t>(&v) != retvOk) { PShell->Ack(retvCmdError); return; }
+        Audio.SetSpeakerVolume(v);
+    }
 
     else if(PCmd->NameIs("A")) Player.Play("Alive.wav");
     else if(PCmd->NameIs("44")) Player.Play("Mocart44.wav");
     else if(PCmd->NameIs("48")) Player.Play("Mocart48.wav");
     else if(PCmd->NameIs("96")) Player.Play("Mocart96.wav");
-
 
 
     else PShell->Ack(retvCmdUnknown);

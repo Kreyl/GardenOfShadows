@@ -396,18 +396,21 @@ uint8_t CS42L52_t::WriteMany(uint8_t StartAddr, uint8_t *PValues, uint8_t Len) {
 #endif
 
 #if 1 // ============================= Volumes =================================
+// -102...12 dB
 u8 CS42L52_t::SetMasterVolume(i8 Volume_dB) {
     if(Volume_dB < -102 or Volume_dB > 12) return retvBadValue;
     Volume_dB *= 2; // 0.5dB step
     return WriteTwoTheSame(0x20, Volume_dB);
 }
 
+// -96...0 dB
 u8 CS42L52_t::SetHeadphoneVolume(i8 Volume_dB) {
     if(Volume_dB < -96 or Volume_dB > 0) return retvBadValue;
     Volume_dB *= 2; // 0.5dB step
     return WriteTwoTheSame(0x22, Volume_dB);
 }
 
+// -96...0 dB
 u8 CS42L52_t::SetSpeakerVolume(i8 Volume_dB) {
     if(Volume_dB < -96 or Volume_dB > 0) return retvBadValue;
     Volume_dB *= 2; // 0.5dB step
