@@ -11,10 +11,12 @@
 #include "ff.h"
 
 #define FRAME_BUF_SZ        4096
+#define MAX_NAME_LEN        48
 
 class AuPlayer_t {
 private:
     FIL IFile;
+    uint32_t PreviousN;
     uint32_t Buf1[(FRAME_BUF_SZ/4)], Buf2[(FRAME_BUF_SZ/4)], *PCurBuf, BufSz;
     uint8_t OpenWav(const char* AFileName);
 //    uint8_t ReadNextWavFrames
@@ -24,6 +26,7 @@ public:
 
     uint8_t Play(const char* AFileName);
     void Stop();
+    void PlayRandomFileFromDir(const char* DirName);
 
     void Rewind();
     // Inner use

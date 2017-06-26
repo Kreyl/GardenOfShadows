@@ -10,6 +10,10 @@
 #include "ff.h"
 #include "kl_lib.h"
 
+// Variables
+extern FILINFO FileInfo;
+extern DIR Dir;
+
 uint8_t TryOpenFileRead(const char *Filename, FIL *PFile);
 uint8_t CheckFileNotEmpty(FIL *PFile);
 uint8_t TryRead(FIL *PFile, void *Ptr, uint32_t Sz);
@@ -29,3 +33,27 @@ uint8_t TryRead(FIL *PFile, T *Ptr) {
 
 uint8_t ReadLine(FIL *PFile, char* S, uint32_t MaxLen);
 
+uint8_t CountFilesInDir(const char* DirName, const char* Extension, uint32_t *PCnt);
+
+// =========================== ini file operations =============================
+#define SD_STRING_SZ    256 // for operations with strings
+/*
+ * ini file has the following structure:
+ *
+ * # This is Comment: comment uses either '#' or ';' symbol
+ * ; This is Comment too
+ *
+ * [Section]    ; This is name of section
+ * Count=6      ; This is key with value of int32
+ * Volume=-1    ; int32
+ * SoundFileName=phrase01.wav   ; string
+ *
+ * [Section2]
+ * Key1=1
+ * ...
+ */
+
+uint8_t iniReadString(const char *AFileName, const char *ASection, const char *AKey, char **PPOutput);
+
+template <typename T>
+uint8_t iniRead(const char *AFileName, const char *ASection, const char *AKey, T *POutput);
