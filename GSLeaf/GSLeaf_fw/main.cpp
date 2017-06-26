@@ -68,13 +68,9 @@ int main(void) {
     Acc.Init();
 
     SD.Init();
-//    int32_t dw32;
-//    if(SD.iniRead<int32_t>("settings.ini", "radio", "id", &dw32) == retvOk) {
-//        Printf("%d\r", dw32);
-//    }
     Player.Init();
     Audio.SetSpeakerVolume(-10);
-
+    Audio.Standby();
 //    Player.Play("alive.wav");
 
     // Main cycle
@@ -96,6 +92,7 @@ void ITask() {
                     Printf("AccWhenIdle\r");
                     Led.StartOrRestart(lsqAccIdle);
                     State = stPlaying;
+                    Audio.Resume();
                     Player.PlayRandomFileFromDir("Sounds");
 //                    Player.Play("Alive.wav");
                 }
@@ -111,7 +108,9 @@ void ITask() {
                 if(State == stPlaying) {
                     tmrPauseAfter.StartOrRestart();
                     State = stWaiting;
+                    Led.StartOrRestart(lsqWaiting);
                 }
+                Audio.Standby();
                 break;
 
             case evtIdPauseEnds:

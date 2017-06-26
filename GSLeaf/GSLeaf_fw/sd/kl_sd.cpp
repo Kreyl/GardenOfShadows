@@ -52,6 +52,15 @@ void sd_t::Init() {
     IsReady = true;
 }
 
+void sd_t::Standby() {
+    PinSetHi(SD_PWR_PIN); // Power on
+}
+
+void sd_t::Resume() {
+    PinSetLo(SD_PWR_PIN); // Power on
+    chThdSleepMilliseconds(45);    // Let power to stabilize
+}
+
 // ============================== Hardware =====================================
 extern "C" {
 

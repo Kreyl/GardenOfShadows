@@ -254,6 +254,15 @@ void CS42L52_t::Init() {
 #endif
 }
 
+void CS42L52_t::Standby() {
+    WriteReg(CS_R_PWR_CTRL1, 0xFF);
+}
+
+void CS42L52_t::Resume() {
+    // PwrCtrl 1: Power on codec only
+    WriteReg(CS_R_PWR_CTRL1, 0b11111110);
+}
+
 #if 1 // ==================== Low-level gains and volumes ======================
 // Set mic gain: +16...+32 dB
 void CS42L52_t::SetMicGain(uint8_t Gain_dB) {

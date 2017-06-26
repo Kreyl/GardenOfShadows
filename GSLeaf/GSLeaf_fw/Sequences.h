@@ -215,6 +215,10 @@ const LedRGBChunk_t lsqIdle[] = {
         {csSetup, 0, {0,2,0}},
         {csEnd}
 };
+const LedRGBChunk_t lsqWaiting[] = {
+        {csSetup, 0, {0,0,4}},
+        {csEnd}
+};
 
 //const LedRGBChunk_t lsqFailure[] = {
 //        {csSetup, 0, clRed},

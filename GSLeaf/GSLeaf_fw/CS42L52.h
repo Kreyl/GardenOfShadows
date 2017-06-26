@@ -35,6 +35,8 @@ private:
     void DisableSAI() { AU_SAI_A->CR1 &= ~SAI_xCR1_SAIEN; AU_SAI_B->CR1 &= ~SAI_xCR1_SAIEN; }
 public:
     void Init();
+    void Standby();
+    void Resume();
     u8 ReadReg(u8 RegAddr, u8 *PValue);
     u8 WriteReg(u8 RegAddr, u8 Value);
     u8 WriteMany(u8 StartAddr, u8 *PValues, u8 Len);

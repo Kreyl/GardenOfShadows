@@ -21,6 +21,8 @@ private:
 public:
     bool IsReady;
     void Init();
+    void Standby();
+    void Resume();
 };
 
 extern sd_t SD;
