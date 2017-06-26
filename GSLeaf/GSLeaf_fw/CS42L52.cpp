@@ -317,6 +317,12 @@ void CS42L52_t::TransmitBuf(void *Buf, uint32_t Sz) {
     EnableSAI();            // Start tx
 }
 
+void CS42L52_t::Stop() {
+    dmaStreamDisable(SAI_DMA_A);
+    DisableSAI();
+    AU_SAI_A->CR2 = SAI_xCR2_FFLUSH;
+}
+
 void CS42L52_t::StartStream() {
     DisableSAI();   // All settings must be changed when both blocks are disabled
     dmaStreamDisable(SAI_DMA_A);

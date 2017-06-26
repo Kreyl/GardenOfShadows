@@ -10,6 +10,7 @@
 #include "kl_lib.h"
 #include "shell.h"
 #include "CS42L52.h"
+#include "MsgQ.h"
 
 //#define DBG_PINS
 
@@ -87,6 +88,9 @@ void AuPlayer_t::ITask() {
         } // if(BufSz != 0)
         else {  // End of file
             f_close(&IFile);
+            Audio.Stop();
+            EvtMsg_t Msg(evtIdPlayEnd);
+            EvtQMain.SendNowOrExit(Msg);
         }
     } // while true
 }
@@ -129,6 +133,15 @@ uint8_t AuPlayer_t::Play(const char* AFileName) {
     end:
     f_close(&IFile);
     return retvFail;
+}
+
+void AuPlayer_t::Stop() {
+    ThdRef = nullptr;   // Do not wake thread by IRQ
+    Audio.Stop();
+    BufSz = 0;
+    f_close(&IFile);
+    EvtMsg_t Msg(evtIdPlayEnd);
+    EvtQMain.SendNowOrExit(Msg);
 }
 
 uint8_t AuPlayer_t::OpenWav(const char* AFileName) {

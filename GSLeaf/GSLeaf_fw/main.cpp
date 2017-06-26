@@ -27,6 +27,9 @@ PinOutput_t PwrEn(PWR_EN_PIN);
 CS42L52_t Audio;
 AuPlayer_t Player;
 
+enum State_t { stIdle, stPlaying, stWaiting };
+State_t State = stWaiting;
+
 int main(void) {
     // ==== Setup clock frequency ====
     Clk.SetHiPerfMode();
@@ -86,7 +89,11 @@ void ITask() {
                 break;
 
             case evtIdAcc:
-                Printf("Acc\r");
+                if(State == stIdle) {
+                    Printf("AccWhenIdle\r");
+                    State = stPlaying;
+//                    SndList.PlayRandomFileFromDir("Sounds");
+                }
                 break;
 
             default: break;

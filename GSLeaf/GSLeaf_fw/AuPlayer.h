@@ -23,6 +23,7 @@ public:
     void Init();
 
     uint8_t Play(const char* AFileName);
+    void Stop();
 
     void Rewind();
     // Inner use
