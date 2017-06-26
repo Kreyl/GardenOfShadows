@@ -319,7 +319,6 @@ void CS42L52_t::TransmitBuf(void *Buf, uint32_t Sz) {
 
 void CS42L52_t::Stop() {
     dmaStreamDisable(SAI_DMA_A);
-    DisableSAI();
     AU_SAI_A->CR2 = SAI_xCR2_FFLUSH;
 }
 

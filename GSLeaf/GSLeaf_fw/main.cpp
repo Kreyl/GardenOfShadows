@@ -96,6 +96,10 @@ void ITask() {
                 }
                 break;
 
+            case evtIdPlayEnd:
+                Printf("PlayEnd\r");
+                break;
+
             default: break;
         } // switch
     } // while true
