@@ -15,6 +15,7 @@
 #include "kl_sd.h"
 #include "AuPlayer.h"
 #include "acc_mma8452.h"
+#include "kl_fs_utils.h"
 
 // Forever
 EvtMsgQ_t<EvtMsg_t, MAIN_EVT_Q_LEN> EvtQMain;
@@ -27,8 +28,7 @@ PinOutput_t PwrEn(PWR_EN_PIN);
 CS42L52_t Audio;
 AuPlayer_t Player;
 
-#define PAUSE_AFTER_S   4
-TmrKL_t tmrPauseAfter {S2ST(PAUSE_AFTER_S), evtIdPauseEnds, tktOneShot};
+TmrKL_t tmrPauseAfter {evtIdPauseEnds, tktOneShot};
 
 enum State_t { stIdle, stPlaying, stWaiting };
 State_t State = stIdle;
@@ -69,8 +69,19 @@ int main(void) {
 
     SD.Init();
     Player.Init();
-    Audio.SetSpeakerVolume(-10);
+
+    // Read settings
+    int8_t Volume = 0;
+    uint32_t PauseAfterS = 4;
+    iniRead<int8_t>("Settings.ini", "Common", "Volume", &Volume);
+    iniRead<uint32_t>("Settings.ini", "Common", "Pause", &PauseAfterS);
+    tmrPauseAfter.SetNewPeriod_s(PauseAfterS);
+    Printf("Volume %d; Pause %u\r", Volume, PauseAfterS);
+
+    Audio.SetSpeakerVolume(Volume);
     Audio.Standby();
+
+
 //    Player.Play("alive.wav");
 
     // Main cycle

@@ -55,5 +55,17 @@ uint8_t CountFilesInDir(const char* DirName, const char* Extension, uint32_t *PC
 
 uint8_t iniReadString(const char *AFileName, const char *ASection, const char *AKey, char **PPOutput);
 
+//template <typename T>
+//uint8_t iniRead(const char *AFileName, const char *ASection, const char *AKey, T *POutput);
+
+
 template <typename T>
-uint8_t iniRead(const char *AFileName, const char *ASection, const char *AKey, T *POutput);
+static uint8_t iniRead(const char *AFileName, const char *ASection, const char *AKey, T *POutput) {
+    char *S = nullptr;
+    if(iniReadString(AFileName, ASection, AKey, &S) == retvOk) {
+        int32_t tmp = strtol(S, NULL, 10);
+        *POutput = (T)tmp;
+        return retvOk;
+    }
+    else return retvFail;
+}

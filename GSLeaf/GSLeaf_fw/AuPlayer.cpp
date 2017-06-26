@@ -166,7 +166,7 @@ uint8_t AuPlayer_t::OpenWav(const char* AFileName) {
     if((NextChunkOffset & 1) != 0) NextChunkOffset++;
     // Read format
     if(TryRead<uint16_t>(&IFile, &uw16) != retvOk) goto end;
-    Printf("Fmt: %X\r", uw16);
+//    Printf("Fmt: %X\r", uw16);
     if(uw16 != 1) goto end; // PCM only
     // Channel cnt
     if(TryRead<uint16_t>(&IFile, &Info.ChannelCnt) != retvOk) goto end;
@@ -180,13 +180,13 @@ uint8_t AuPlayer_t::OpenWav(const char* AFileName) {
     // Bits per sample
     if(TryRead<uint16_t>(&IFile, &Info.BitsPerSample) != retvOk) goto end;
 
-    Printf("Sz: %u\r", Info.Size);
-    Printf("NextCh: %u\r", NextChunkOffset);
-    Printf("ChnlCnt: %u\r", Info.ChannelCnt);
-    Printf("SmplRt: %u\r", Info.SampleRate);
-    Printf("BytesPerSecond: %u\r", Info.BytesPerSecond);
-    Printf("BlkAlgn: %u\r", Info.FrameSz);
-    Printf("BitsPerSample: %u\r", Info.BitsPerSample);
+//    Printf("Sz: %u\r", Info.Size);
+//    Printf("NextCh: %u\r", NextChunkOffset);
+//    Printf("ChnlCnt: %u\r", Info.ChannelCnt);
+//    Printf("SmplRt: %u\r", Info.SampleRate);
+//    Printf("BytesPerSecond: %u\r", Info.BytesPerSecond);
+//    Printf("BlkAlgn: %u\r", Info.FrameSz);
+//    Printf("BitsPerSample: %u\r", Info.BitsPerSample);
 
     // Find data chunk
     while(true) {
@@ -202,7 +202,7 @@ uint8_t AuPlayer_t::OpenWav(const char* AFileName) {
             if((Info.InitialDataChunkOffset & 1) != 0) Info.InitialDataChunkOffset++;
             Info.FinalDataChunkOffset = IFile.fptr + ChunkSz;
             if((Info.FinalDataChunkOffset & 1) != 0) Info.FinalDataChunkOffset++;
-            Printf("DataStart: %u; DataEnd: %u\r", Info.InitialDataChunkOffset, Info.FinalDataChunkOffset);
+//            Printf("DataStart: %u; DataEnd: %u\r", Info.InitialDataChunkOffset, Info.FinalDataChunkOffset);
             break;  // Data found
         }
 
@@ -214,7 +214,7 @@ uint8_t AuPlayer_t::OpenWav(const char* AFileName) {
                 if((Info.InitialDataChunkOffset & 1) != 0) Info.InitialDataChunkOffset++;
                 Info.FinalDataChunkOffset = IFile.fptr + ChunkSz;
                 if((Info.FinalDataChunkOffset & 1) != 0) Info.FinalDataChunkOffset++;
-                Printf("DataStart: %u; DataEnd: %u\r", Info.InitialDataChunkOffset, Info.FinalDataChunkOffset);
+//                Printf("DataStart: %u; DataEnd: %u\r", Info.InitialDataChunkOffset, Info.FinalDataChunkOffset);
                 break;
             }
             else {  // Not wavl, so skip LIST alltogether

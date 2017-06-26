@@ -12,6 +12,7 @@
 // Variables
 FILINFO FileInfo;
 DIR Dir;
+FIL IFile;
 
 uint8_t TryOpenFileRead(const char *Filename, FIL *PFile) {
     FRESULT rslt = f_open(PFile, Filename, FA_READ);
@@ -116,8 +117,8 @@ static inline char* striptrailing(char *S) {
 
 uint8_t iniReadString(const char *AFileName, const char *ASection, const char *AKey, char **PPOutput) {
     FRESULT rslt;
+//    Printf("%S %S %S\r", __FUNCTION__, AFileName, ASection);
     // Open file
-    FIL IFile;
     rslt = f_open(&IFile, AFileName, FA_READ+FA_OPEN_EXISTING);
     if(rslt != FR_OK) {
         if (rslt == FR_NO_FILE) Printf("%S: not found\r", AFileName);
@@ -177,14 +178,14 @@ uint8_t iniReadString(const char *AFileName, const char *ASection, const char *A
     return retvOk;
 }
 
-template <typename T>
-uint8_t iniRead(const char *AFileName, const char *ASection, const char *AKey, T *POutput) {
-    char *S = nullptr;
-    if(iniReadString(AFileName, ASection, AKey, &S) == retvOk) {
-        int32_t tmp = strtol(S, NULL, 10);
-        *POutput = (T)tmp;
-        return retvOk;
-    }
-    else return retvFail;
-}
+//template <typename T>
+//uint8_t iniRead(const char *AFileName, const char *ASection, const char *AKey, T *POutput) {
+//    char *S = nullptr;
+//    if(iniReadString(AFileName, ASection, AKey, &S) == retvOk) {
+//        int32_t tmp = strtol(S, NULL, 10);
+//        *POutput = (T)tmp;
+//        return retvOk;
+//    }
+//    else return retvFail;
+//}
 #endif
