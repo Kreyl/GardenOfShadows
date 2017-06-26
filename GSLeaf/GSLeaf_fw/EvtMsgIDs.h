@@ -17,4 +17,5 @@ enum EvtMsgId_t {
     evtIdButtons = 15,
     evtIdAcc = 16,
     evtIdPlayEnd = 17,
+    evtIdPauseEnds = 18,
 };

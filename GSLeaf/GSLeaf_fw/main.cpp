@@ -27,6 +27,9 @@ PinOutput_t PwrEn(PWR_EN_PIN);
 CS42L52_t Audio;
 AuPlayer_t Player;
 
+#define PAUSE_AFTER_S   4
+TmrKL_t tmrPauseAfter {S2ST(PAUSE_AFTER_S), evtIdPauseEnds, tktOneShot};
+
 enum State_t { stIdle, stPlaying, stWaiting };
 State_t State = stWaiting;
 
@@ -91,13 +94,32 @@ void ITask() {
             case evtIdAcc:
                 if(State == stIdle) {
                     Printf("AccWhenIdle\r");
+                    Led.StartOrRestart(lsqAccIdle);
                     State = stPlaying;
 //                    SndList.PlayRandomFileFromDir("Sounds");
+                    Player.Play("Alive.wav");
+                }
+                else if(State == stWaiting) {
+                    Printf("AccWhenW\r");
+                    Led.StartOrRestart(lsqAccWaiting);
+                    tmrPauseAfter.StartOrRestart();
                 }
                 break;
 
             case evtIdPlayEnd:
                 Printf("PlayEnd\r");
+                if(State == stPlaying) {
+                    tmrPauseAfter.StartOrRestart();
+                    State = stWaiting;
+                }
+                break;
+
+            case evtIdPauseEnds:
+                if(State == stWaiting) {
+                    Led.StartOrRestart(lsqIdle);
+                    Printf("PauseEnd\r");
+                    State = stIdle;
+                }
                 break;
 
             default: break;
