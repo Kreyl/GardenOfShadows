@@ -14,6 +14,7 @@
 #include "CS42L52.h"
 #include "kl_sd.h"
 #include "AuPlayer.h"
+#include "acc_mma8452.h"
 
 // Forever
 EvtMsgQ_t<EvtMsg_t, MAIN_EVT_Q_LEN> EvtQMain;
@@ -53,9 +54,12 @@ int main(void) {
     // Audio
     i2c1.Init();
     Audio.Init();
-    Audio.SetSpeakerVolume(-96);
+    Audio.SetSpeakerVolume(-96);    // To remove speaker pop at power on
     Audio.DisableHeadphones();
     Audio.EnableSpeakerMono();
+
+//    i2c1.ScanBus();
+    Acc.Init();
 
     SD.Init();
 //    int32_t dw32;
@@ -65,7 +69,7 @@ int main(void) {
     Player.Init();
     Audio.SetSpeakerVolume(-10);
 
-    Player.Play("alive.wav");
+//    Player.Play("alive.wav");
 
     // Main cycle
     ITask();
@@ -79,6 +83,10 @@ void ITask() {
             case evtIdShellCmd:
                 OnCmd((Shell_t*)Msg.Ptr);
                 ((Shell_t*)Msg.Ptr)->SignalCmdProcessed();
+                break;
+
+            case evtIdAcc:
+                Printf("Acc\r");
                 break;
 
             default: break;

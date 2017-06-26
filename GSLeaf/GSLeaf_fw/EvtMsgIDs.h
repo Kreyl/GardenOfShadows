@@ -15,4 +15,5 @@ enum EvtMsgId_t {
     evtIdEverySecond = 2,
 
     evtIdButtons = 15,
+    evtIdAcc = 16,
 };

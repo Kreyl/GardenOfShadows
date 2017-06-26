@@ -70,6 +70,11 @@
 #define AU_SAI_B        SAI1_Block_B
 #define AU_SAI_RccEn()  RCC->APB2ENR |= RCC_APB2ENR_SAI1EN
 
+// Acc
+#define Acc_i2c         i2c1
+#define ACC_IRQ_GPIO    GPIOB
+#define ACC_IRQ_PIN     2
+
 // I2C
 #define I2C1_GPIO       GPIOB
 #define I2C1_SCL        6
