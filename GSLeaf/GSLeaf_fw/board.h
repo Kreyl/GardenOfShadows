@@ -28,8 +28,8 @@
 #define I2C1_ENABLED            TRUE
 #define I2C2_ENABLED            FALSE
 #define I2C3_ENABLED            FALSE
-#define SIMPLESENSORS_ENABLED   FALSE
-#define BUTTONS_ENABLED         FALSE
+#define SIMPLESENSORS_ENABLED   TRUE
+#define BUTTONS_ENABLED         TRUE
 
 #define ADC_REQUIRED            FALSE
 #define STM32_DMA_REQUIRED      TRUE    // Leave this macro name for OS

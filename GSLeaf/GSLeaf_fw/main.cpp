@@ -17,6 +17,7 @@
 #include "acc_mma8452.h"
 #include "kl_fs_utils.h"
 #include "radio_lvl1.h"
+#include "SimpleSensors.h"
 
 // Forever
 EvtMsgQ_t<EvtMsg_t, MAIN_EVT_Q_LEN> EvtQMain;
@@ -105,6 +106,8 @@ int main(void) {
     if(Radio.Init() == retvOk) Led.StartOrRestart(lsqStart);
     else Led.StartOrRestart(lsqFailure);
 
+    SimpleSensors::Init();
+
 //    Player.Play("alive.wav");
 
     // Main cycle
@@ -166,13 +169,11 @@ void ITask() {
                 Audio.Standby();
                 break;
 
-//            case evtIdPauseEnds:
-//                if(State == stWaiting) {
-//                    Led.StartOrRestart(lsqIdle);
-//                    Printf("PauseEnd\r");
-//                    State = stIdle;
-//                }
-//                break;
+            case evtIdButtons:
+                Printf("Btn %u\r", Msg.BtnEvtInfo.BtnID);
+                if(Msg.BtnEvtInfo.BtnID == 0) Audio.VolumeUp();
+                else Audio.VolumeDown();
+                break;
 
             default: break;
         } // switch
@@ -209,7 +210,10 @@ void OnCmd(Shell_t *PShell) {
 
     else if(PCmd->NameIs("A")) Player.Play("Alive.wav");
     else if(PCmd->NameIs("44")) Player.Play("Mocart44.wav");
-    else if(PCmd->NameIs("48")) Player.Play("Mocart48.wav");
+    else if(PCmd->NameIs("48")) {
+        Audio.Resume();
+        Player.Play("Mocart48.wav");
+    }
     else if(PCmd->NameIs("96")) Player.Play("Mocart96.wav");
 
 
