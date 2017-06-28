@@ -44,7 +44,7 @@ public:
 
     bool EnoughTimePassed(int32_t Chnl) {
         int32_t Indx = Chnl - RCHNL_MIN;
-        Printf("%u\r", chVTTimeElapsedSinceX(ITable[Indx]));
+//        Printf("%u\r", chVTTimeElapsedSinceX(ITable[Indx]));
         return (chVTTimeElapsedSinceX(ITable[Indx]) >= S2ST(PAUSE_BEFORE_REPEAT_S));
     }
 
@@ -54,17 +54,9 @@ public:
 } RxTable;
 #endif
 
-int32_t IdNowPlaying = -1, IdPrevious = -1;
-#define DIRNAME_SURROUND        "Surround"
-char DirNameToPlayNext[18] = DIRNAME_SURROUND;
-
-void PlayID(int32_t AID) {
-    char DirName[9];
-    itoa(IdNowPlaying, DirName, 10);
-    Printf("Play %S\r", DirName);
-    Audio.Resume();
-    Player.PlayRandomFileFromDir(DirName);
-}
+#define ID_SURROUND         -1
+#define DIRNAME_SURROUND    "Surround"
+int32_t IdPlayingNow = ID_SURROUND, IdPlayNext = ID_SURROUND;
 
 TmrKL_t tmrPauseAfter {evtIdPauseEnds, tktOneShot};
 
@@ -103,15 +95,16 @@ int main(void) {
     SD.Init();
     Player.Init();
 
-    Audio.SetSpeakerVolume(0);
-    Audio.Standby();
+//    Audio.SetSpeakerVolume(0);
+//    Audio.Standby();
 
     if(Radio.Init() == retvOk) Led.StartOrRestart(lsqStart);
     else Led.StartOrRestart(lsqFailure);
 
     SimpleSensors::Init();
 
-//    Player.Play("alive.wav");
+    // Start playing surround music
+    Player.PlayRandomFileFromDir(DIRNAME_SURROUND);
 
     // Main cycle
     ITask();
@@ -129,24 +122,25 @@ void ITask() {
 
             case evtIdOnRx: {
                 int32_t rxID = Msg.Value;
-                if(IdNowPlaying < 0) {  // Not playing now
+                if(IdPlayingNow == ID_SURROUND) {
                     if(RxTable.EnoughTimePassed(rxID)) {
-                        IdNowPlaying = rxID;
-                        PlayID(IdNowPlaying);
+                        // Fadeout surround and play rcvd id
+                        IdPlayNext = rxID;
+                        Player.FadeOut();
                     }
                 }
-                else { // Playing now
-                    if(rxID != IdNowPlaying) {  // Some new ID received
+                else { // Playing some ID
+                    if(rxID != IdPlayingNow) {  // Some new ID received
                         // Switch to new ID if current one is offline for enough time
-                        if(RxTable.EnoughTimePassed(IdNowPlaying)) {
-                            IdPrevious = IdNowPlaying;
-                            IdNowPlaying = rxID;
-                            PlayID(IdNowPlaying);
+                        if(RxTable.EnoughTimePassed(IdPlayingNow)) {
+                            // Fadeout current and play rcvd id
+                            IdPlayNext = rxID;
+                            Player.FadeOut();
                         }
                     }
                 }
                 // Put timestamp to table
-                RxTable.Put(Msg.Value);
+                RxTable.Put(rxID);
             } break;
 
 //            case evtIdAcc:
@@ -165,12 +159,16 @@ void ITask() {
 //                }
 //                break;
 
-            case evtIdPlayEnd:
+            case evtIdPlayEnd: {
                 Printf("PlayEnd\r");
-                IdPrevious = IdNowPlaying;
-                IdNowPlaying = -1;
-                Audio.Standby();
-                break;
+                IdPlayingNow = IdPlayNext;
+                IdPlayNext = ID_SURROUND;
+                char DirName[18];
+                if(IdPlayingNow == ID_SURROUND) strcpy(DirName, DIRNAME_SURROUND);
+                else itoa(IdPlayingNow, DirName, 10);
+                Printf("Play %S\r", DirName);
+                Player.PlayRandomFileFromDir(DirName);
+            } break;
 
             case evtIdButtons:
                 Printf("Btn %u\r", Msg.BtnEvtInfo.BtnID);

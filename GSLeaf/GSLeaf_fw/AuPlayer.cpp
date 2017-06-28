@@ -42,6 +42,12 @@ struct WavFileInfo_t {
 };
 static WavFileInfo_t Info;
 
+enum PlayerEffect_t {peNone, peFadeOut};
+static PlayerEffect_t Effect = peNone;
+
+static int8_t StartVolume, CurrentVolume;
+static systime_t ITime;
+
 // DMA Tx Completed IRQ
 static thread_reference_t ThdRef = nullptr;
 extern "C"
@@ -85,11 +91,24 @@ void AuPlayer_t::ITask() {
                 Info.ChunkSz -= BufSz;
             }
             else BufSz = 0;
+
+            // Effects
+            if(Effect == peFadeOut) {
+                if(chVTTimeElapsedSinceX(ITime) >= MS2ST(63)) {
+                    if(CurrentVolume > -63) {
+                        CurrentVolume--;
+                        Audio.SetVolume(CurrentVolume);
+                    }
+                    else BufSz = 0; // End of fade
+                }
+            }
         } // if(BufSz != 0)
         else {  // End of file
             f_close(&IFile);
-            IsPlayingNow = false;
             Audio.Stop();
+            IsPlayingNow = false;
+            if(Effect == peFadeOut) Audio.SetVolume(StartVolume);
+            Effect = peNone;
             EvtMsg_t Msg(evtIdPlayEnd);
             EvtQMain.SendNowOrExit(Msg);
         }
@@ -150,15 +169,10 @@ void AuPlayer_t::Stop() {
 
 void AuPlayer_t::FadeOut() {
     if(!IsPlayingNow) return;
-    int8_t StartVolume = Audio.GetVolume();
-    int8_t v = StartVolume;
-    while(v > -63) {
-        v -= 1;
-        Audio.SetVolume(v);
-        chThdSleepMilliseconds(63);
-    }
-    Stop();
-    Audio.SetVolume(StartVolume);
+    StartVolume = Audio.GetVolume();
+    CurrentVolume = StartVolume;
+    ITime = chVTGetSystemTimeX();
+    Effect = peFadeOut;
 }
 
 uint8_t AuPlayer_t::OpenWav(const char* AFileName) {
