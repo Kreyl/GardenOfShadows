@@ -12,6 +12,8 @@
 #include "kl_i2c.h"
 #include "kl_lib.h"
 #include "MsgQ.h"
+#include "SimpleSensors.h"
+#include "acc_mma8452.h"
 
 #if 1 // ======================== Variables and defines ========================
 // Forever
@@ -25,23 +27,23 @@ static void OnCmd(Shell_t *PShell);
 #define ID_DEFAULT              ID_MIN
 // EEAddresses
 #define EE_ADDR_DEVICE_ID       0
-#define EE_ADDR_HEALTH_STATE    8
 
 int32_t ID;
 static uint8_t ISetID(int32_t NewID);
 void ReadIDfromEE();
 
-// ==== Periphery ====
-LedSmooth_t Led { LED_PIN };
+extern Acc_t Acc;
+static bool AccExists, IsOn = true;
 
-// ==== Timers ====
-//static TmrKL_t TmrRxTableCheck {MS2ST(2007), EVT_RXCHECK, tktPeriodic};
+// No more than 6500 mS
+TmrKL_t TmrOnDelay (S2ST(4), evtIdOnDelayEnd, tktOneShot);
+
+LedSmooth_t Led { LED_PIN };
 #endif
 
 int main(void) {
     // ==== Init Vcore & clock system ====
     SetupVCore(vcore1V2);
-//    Clk.SetMSI4MHz();
     Clk.UpdateFreqValues();
 
     // === Init OS ===
@@ -54,22 +56,20 @@ int main(void) {
     ReadIDfromEE();
     Printf("\r%S %S; ID=%u\r", APP_NAME, BUILD_TIME, ID);
 //    Uart.Printf("ID: %X %X %X\r", GetUniqID1(), GetUniqID2(), GetUniqID3());
-//    if(Sleep::WasInStandby()) {
-//        Uart.Printf("WasStandby\r");
-//        Sleep::ClearStandbyFlag();
-//    }
+    if(Sleep::WasInStandby()) {
+        Printf("WasStandby\r");
+        Sleep::ClearStandbyFlag();
+    }
     Clk.PrintFreqs();
-//    RandomSeed(GetUniqID3());   // Init random algorythm with uniq ID
 
     Led.Init();
-//    Led.SetupSeqEndEvt(chThdGetSelfX(), EVT_LED_SEQ_END);
-#if BTN_ENABLED
-//    PinSensors.Init();
-#endif
-
-    // ==== Time and timers ====
-//    TmrEverySecond.StartOrRestart();
-//    TmrRxTableCheck.InitAndStart();
+    i2c1.Init();
+//    i2c1.ScanBus();
+    AccExists = (Acc.Init() == retvOk);
+    if(!AccExists) {
+        i2c1.Standby();
+        SimpleSensors::Init();
+    }
 
     // ==== Radio ====
     if(Radio.Init() == retvOk) {
@@ -77,8 +77,14 @@ int main(void) {
         RMsg_t msg = {R_MSG_SET_CHNL, (uint8_t)ID};
         Radio.RMsgQ.SendNowOrExit(msg);
     }
-    else Led.StartOrRestart(lsqFailure);
-    chThdSleepMilliseconds(1008);
+    else {
+        Led.StartOrRestart(lsqFailure);
+        while(true) {
+            chThdSleepMilliseconds(3600);
+        }
+    }
+
+    TmrOnDelay.StartOrRestart();    // Will switch device off after a while
 
     // Main cycle
     ITask();
@@ -89,50 +95,31 @@ void ITask() {
     while(true) {
         EvtMsg_t Msg = EvtQMain.Fetch(TIME_INFINITE);
         switch(Msg.ID) {
+            case evtIdOnDelayEnd: {
+                Printf("Off\r");
+                IsOn = false;
+                Led.SetBrightness(0);
+                RMsg_t msg = {R_MSG_STANDBY};
+                Radio.RMsgQ.SendWaitingAbility(msg, MS2ST(4500));
+                chThdSleepMilliseconds(90);
+                if(!AccExists) {
+                    chSysLock();
+                    Sleep::EnableWakeup1Pin();
+                    Sleep::EnterStandby();
+                    chSysUnlock();
+                }
+            } break;
 
-#if BTN_ENABLED
-            case evtIdButtons:
-                Printf("Btn %u\r", Msg.BtnEvtInfo.BtnID);
+            case evtIdAcc:
+                Printf("Acc\r");
+                TmrOnDelay.StartOrRestart();
+                if(!IsOn) {
+                    IsOn = true;
+                    Led.StartOrRestart(lsqStart);
+                    RMsg_t msg = {R_MSG_WAKEUP};
+                    Radio.RMsgQ.SendWaitingAbility(msg, MS2ST(4500));
+                }
                 break;
-        if(Evt & EVT_BUTTONS) {
-            Uart.Printf("Btn\r");
-            BtnEvtInfo_t EInfo;
-            while(BtnGetEvt(&EInfo) == OK) {
-                if(EInfo.Type == bePress) {
-                    Sheltering.TimeOfBtnPress = TimeS;
-                    Sheltering.ProcessCChangeOrBtn();
-                } // if Press
-            } // while
-        }
-#endif
-
-//        if(Evt & EVT_RX) {
-//            int32_t TimeRx = Radio.PktRx.Time;
-//            Uart.Printf("RX %u\r", TimeRx);
-//            Cataclysm.ProcessSignal(TimeRx);
-//        }
-
-//        if(Evt & EVT_RXCHECK) {
-//            if(ShowAliens == true) {
-//                if(Radio.RxTable.GetCount() != 0) {
-//                    Led.StartOrContinue(lsqTheyAreNear);
-//                    Radio.RxTable.Clear();
-//                }
-//                else Led.StartOrContinue(lsqTheyDissapeared);
-//            }
-//        }
-
-#if 0 // ==== Led sequence end ====
-        if(Evt & EVT_LED_SEQ_END) {
-        }
-#endif
-        //        if(Evt & EVT_OFF) {
-        ////            Uart.Printf("Off\r");
-        //            chSysLock();
-        //            Sleep::EnableWakeup1Pin();
-        //            Sleep::EnterStandby();
-        //            chSysUnlock();
-        //        }
 
 #if UART_RX_ENABLED
             case evtIdShellCmd:
@@ -144,6 +131,14 @@ void ITask() {
         } // Switch
     } // while true
 } // ITask()
+
+void ProcessTouch(PinSnsState_t *PState, uint32_t Len) {
+    if(*PState == pssHi) {
+        TmrOnDelay.StartOrRestart();
+//        Printf("Touch\r");
+    }
+    else if(*PState == pssFalling) Printf("Detouch\r");
+}
 
 #if UART_RX_ENABLED // ================= Command processing ====================
 void OnCmd(Shell_t *PShell) {

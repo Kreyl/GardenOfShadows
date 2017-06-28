@@ -29,6 +29,7 @@ cc1101_t CC(CC_Setup0);
 
 rLevel1_t Radio;
 rPkt_t PktTx;
+static bool IsOn = true;
 
 #if 1 // ================================ Task =================================
 static THD_WORKING_AREA(warLvl1Thread, 256);
@@ -37,14 +38,34 @@ static void rLvl1Thread(void *arg) {
     chRegSetThreadName("rLvl1");
     while(true) {
         RMsg_t msg = Radio.RMsgQ.Fetch(TIME_IMMEDIATE);
-        if(msg.Cmd == R_MSG_SET_PWR) CC.SetTxPower(msg.Value);
-        if(msg.Cmd == R_MSG_SET_CHNL) {
-            CC.SetChannel(msg.Value);
-            PktTx.DWord32 = msg.Value;
+        switch(msg.Cmd) {
+            case R_MSG_SET_PWR:
+                CC.SetTxPower(msg.Value);
+                break;
+
+            case R_MSG_SET_CHNL:
+                CC.SetChannel(msg.Value);
+                PktTx.DWord32 = msg.Value;
+                break;
+
+            case R_MSG_STANDBY:
+                IsOn = false;
+                CC.EnterPwrDown();
+                chThdSleepMilliseconds(4500);
+                break;
+
+            case R_MSG_WAKEUP:
+                IsOn = true;
+                break;
+
+            default: break;
         }
-        DBG1_SET();
-        CC.Transmit(&PktTx);
-        DBG1_CLR();
+
+        if(IsOn) {
+            DBG1_SET();
+            CC.Transmit(&PktTx);
+            DBG1_CLR();
+        }
         chThdSleepMilliseconds(4);
     } // while true
 }

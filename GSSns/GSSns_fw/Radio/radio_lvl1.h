@@ -70,6 +70,8 @@ union rPkt_t {
 #define R_MSGQ_LEN      4
 #define R_MSG_SET_PWR   1
 #define R_MSG_SET_CHNL  2
+#define R_MSG_STANDBY   3
+#define R_MSG_WAKEUP    4
 struct RMsg_t {
     uint8_t Cmd;
     uint8_t Value;

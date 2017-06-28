@@ -14,7 +14,7 @@
 #define APP_NAME            "TxOnTouch"
 
 // ==== High-level peripery control ====
-#define TOUCH_ENABLED           FALSE
+#define TOUCH_ENABLED           TRUE
 
 #define SIMPLESENSORS_ENABLED   TOUCH_ENABLED
 
@@ -25,7 +25,7 @@
 #define CRYSTAL_FREQ_HZ     12000000
 
 #define SYS_TIM_CLK         (Clk.APB1FreqHz)
-#define I2C1_ENABLED        FALSE
+#define I2C1_ENABLED        TRUE
 #define I2C_USE_SEMAPHORE   FALSE
 #define ADC_REQUIRED        FALSE
 
@@ -40,7 +40,7 @@
 #define LED_PIN         { GPIOB, 0, TIM3, 3, invNotInverted, omPushPull, 255 }
 
 // Touch
-#define TOUCH_PIN       { GPIOA, 0, pudPullDown }
+#define TOUCH_PIN       GPIOA, 0, pudPullDown
 
 // I2C
 #if I2C1_ENABLED
@@ -48,6 +48,11 @@
 #define I2C1_SCL        8
 #define I2C1_SDA        9
 #endif
+
+// Acc
+#define Acc_i2c         i2c1
+#define ACC_IRQ_GPIO    GPIOB
+#define ACC_IRQ_PIN     4
 
 // Radio: SPI, PGpio, Sck, Miso, Mosi, Cs, Gdo0
 #define CC_Setup0       SPI1, GPIOA, 5,6,7, 4, 3
@@ -59,7 +64,7 @@
 
 #if I2C1_ENABLED // ====================== I2C ================================
 #define I2C1_BAUDRATE   400000
-#define I2C_PILL        i2c1
+
 #endif
 
 #if 1 // ========================== USART ======================================
