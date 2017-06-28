@@ -57,6 +57,7 @@ public:
 #define ID_SURROUND         -1
 #define DIRNAME_SURROUND    "Surround"
 int32_t IdPlayingNow = ID_SURROUND, IdPlayNext = ID_SURROUND;
+static char DirName[18];
 
 TmrKL_t tmrPauseAfter {evtIdPauseEnds, tktOneShot};
 
@@ -163,10 +164,10 @@ void ITask() {
                 Printf("PlayEnd\r");
                 IdPlayingNow = IdPlayNext;
                 IdPlayNext = ID_SURROUND;
-                char DirName[18];
+                // Decide what to play: surround or some id
                 if(IdPlayingNow == ID_SURROUND) strcpy(DirName, DIRNAME_SURROUND);
                 else itoa(IdPlayingNow, DirName, 10);
-                Printf("Play %S\r", DirName);
+//                Printf("Play %S\r", DirName);
                 Player.PlayRandomFileFromDir(DirName);
             } break;
 
@@ -192,9 +193,11 @@ void OnRadioRx(uint8_t AID, int8_t Rssi) {
 void ProcessChargePin(PinSnsState_t *PState, uint32_t Len) {
     if(*PState == pssFalling) { // Charge started
         Led.StartOrContinue(lsqCharging);
+        Printf("Charge started\r");
     }
     if(*PState == pssRising) { // Charge ended
         Led.StartOrContinue(lsqOperational);
+        Printf("Charge ended\r");
     }
 }
 
