@@ -445,6 +445,16 @@ void CS42L52_t::VolumeDown() {
     if(IVolume < -45) IVolume = -45;
     if(IsOn) SetHeadphoneVolume(IVolume);
 }
+
+void CS42L52_t::SetVolume(int8_t AVolume) {
+    if(IsOn) SetHeadphoneVolume(AVolume);
+}
+
+int8_t CS42L52_t::GetVolume() {
+    uint8_t v;
+    ReadReg(0x22, &v);
+    return (int8_t)v;
+}
 #endif
 
 #if 1 // ========================= Enable/Disable ==============================

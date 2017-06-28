@@ -88,6 +88,7 @@ void AuPlayer_t::ITask() {
         } // if(BufSz != 0)
         else {  // End of file
             f_close(&IFile);
+            IsPlayingNow = false;
             Audio.Stop();
             EvtMsg_t Msg(evtIdPlayEnd);
             EvtQMain.SendNowOrExit(Msg);
@@ -130,19 +131,34 @@ uint8_t AuPlayer_t::Play(const char* AFileName) {
             Info.ChunkSz -= BufSz;
         }
     }
+    IsPlayingNow = true;
     return retvOk;
     end:
     f_close(&IFile);
+    IsPlayingNow = false;
     return retvFail;
 }
 
 void AuPlayer_t::Stop() {
-    ThdRef = nullptr;   // Do not wake thread by IRQ
-    Audio.Stop();
+    if(!IsPlayingNow) return;
     BufSz = 0;
+    Audio.Stop();
     f_close(&IFile);
     EvtMsg_t Msg(evtIdPlayEnd);
     EvtQMain.SendNowOrExit(Msg);
+}
+
+void AuPlayer_t::FadeOut() {
+    if(!IsPlayingNow) return;
+    int8_t StartVolume = Audio.GetVolume();
+    int8_t v = StartVolume;
+    while(v > -63) {
+        v -= 1;
+        Audio.SetVolume(v);
+        chThdSleepMilliseconds(63);
+    }
+    Stop();
+    Audio.SetVolume(StartVolume);
 }
 
 uint8_t AuPlayer_t::OpenWav(const char* AFileName) {

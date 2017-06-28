@@ -55,6 +55,9 @@ public:
 #endif
 
 int32_t IdNowPlaying = -1, IdPrevious = -1;
+#define DIRNAME_SURROUND        "Surround"
+char DirNameToPlayNext[18] = DIRNAME_SURROUND;
+
 void PlayID(int32_t AID) {
     char DirName[9];
     itoa(IdNowPlaying, DirName, 10);
@@ -209,12 +212,11 @@ void OnCmd(Shell_t *PShell) {
     }
 
     else if(PCmd->NameIs("A")) Player.Play("Alive.wav");
-    else if(PCmd->NameIs("44")) Player.Play("Mocart44.wav");
     else if(PCmd->NameIs("48")) {
         Audio.Resume();
         Player.Play("Mocart48.wav");
     }
-    else if(PCmd->NameIs("96")) Player.Play("Mocart96.wav");
+    else if(PCmd->NameIs("FO")) Player.FadeOut();
 
 
     else PShell->Ack(retvCmdUnknown);

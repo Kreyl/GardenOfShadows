@@ -65,6 +65,8 @@ public:
 
     void VolumeUp();
     void VolumeDown();
+    void SetVolume(int8_t AVolume);
+    int8_t GetVolume();
 
     // Enable/Disable
     void EnableMicSystem();
