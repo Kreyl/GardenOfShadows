@@ -24,17 +24,45 @@ extern CmdUart_t Uart;
 void OnCmd(Shell_t *PShell);
 void ITask();
 
-//#define
+#define PAUSE_BEFORE_REPEAT_S       7
 
 LedRGB_t Led { LED_RED_CH, LED_GREEN_CH, LED_BLUE_CH };
 PinOutput_t PwrEn(PWR_EN_PIN);
 CS42L52_t Audio;
 AuPlayer_t Player;
 
-TmrKL_t tmrPauseAfter {evtIdPauseEnds, tktOneShot};
+#if 1 // ============================= Rx Table ================================
+class RxTable_t {
+private:
+    systime_t ITable[RCHNL_CNT];
+public:
+    void Put(int32_t Chnl) {
+        int32_t Indx = Chnl - RCHNL_MIN;
+        ITable[Indx] = chVTGetSystemTimeX();
+    }
 
-enum State_t { stIdle, stPlaying, stWaiting };
-State_t State = stIdle;
+    bool EnoughTimePassed(int32_t Chnl) {
+        int32_t Indx = Chnl - RCHNL_MIN;
+        Printf("%u\r", chVTTimeElapsedSinceX(ITable[Indx]));
+        return (chVTTimeElapsedSinceX(ITable[Indx]) >= S2ST(PAUSE_BEFORE_REPEAT_S));
+    }
+
+    RxTable_t() {
+        for(int i=0; i<RCHNL_CNT; i++) ITable[i] = 0;
+    }
+} RxTable;
+#endif
+
+int32_t IdNowPlaying = -1, IdPrevious = -1;
+void PlayID(int32_t AID) {
+    char DirName[9];
+    itoa(IdNowPlaying, DirName, 10);
+    Printf("Play %S\r", DirName);
+    Audio.Resume();
+    Player.PlayRandomFileFromDir(DirName);
+}
+
+TmrKL_t tmrPauseAfter {evtIdPauseEnds, tktOneShot};
 
 int main(void) {
     // ==== Setup clock frequency ====
@@ -93,6 +121,28 @@ void ITask() {
                 ((Shell_t*)Msg.Ptr)->SignalCmdProcessed();
                 break;
 
+            case evtIdOnRx: {
+                int32_t rxID = Msg.Value;
+                if(IdNowPlaying < 0) {  // Not playing now
+                    if(RxTable.EnoughTimePassed(rxID)) {
+                        IdNowPlaying = rxID;
+                        PlayID(IdNowPlaying);
+                    }
+                }
+                else { // Playing now
+                    if(rxID != IdNowPlaying) {  // Some new ID received
+                        // Switch to new ID if current one is offline for enough time
+                        if(RxTable.EnoughTimePassed(IdNowPlaying)) {
+                            IdPrevious = IdNowPlaying;
+                            IdNowPlaying = rxID;
+                            PlayID(IdNowPlaying);
+                        }
+                    }
+                }
+                // Put timestamp to table
+                RxTable.Put(Msg.Value);
+            } break;
+
 //            case evtIdAcc:
 //                if(State == stIdle) {
 //                    Printf("AccWhenIdle\r");
@@ -109,15 +159,12 @@ void ITask() {
 //                }
 //                break;
 
-//            case evtIdPlayEnd:
-//                Printf("PlayEnd\r");
-//                if(State == stPlaying) {
-//                    tmrPauseAfter.StartOrRestart();
-//                    State = stWaiting;
-//                    Led.StartOrRestart(lsqWaiting);
-//                }
-//                Audio.Standby();
-//                break;
+            case evtIdPlayEnd:
+                Printf("PlayEnd\r");
+                IdPrevious = IdNowPlaying;
+                IdNowPlaying = -1;
+                Audio.Standby();
+                break;
 
 //            case evtIdPauseEnds:
 //                if(State == stWaiting) {
@@ -132,8 +179,12 @@ void ITask() {
     } // while true
 }
 
-void OnRadioRx(uint8_t RChnl, int8_t Rssi) {
-    Printf("Rx %u %d\r", RChnl, Rssi);
+void OnRadioRx(uint8_t AID, int8_t Rssi) {
+    Printf("Rx %u %d\r", AID, Rssi);
+    if(AID < RCHNL_MIN or AID > RCHNL_MAX) return;
+    // Inform main thread
+    EvtMsg_t Msg(evtIdOnRx, (int32_t)AID);
+    EvtQMain.SendNowOrExit(Msg);
 }
 
 #if 1 // ======================= Command processing ============================

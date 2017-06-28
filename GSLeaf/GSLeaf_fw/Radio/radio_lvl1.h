@@ -80,7 +80,8 @@ struct RMsg_t {
 #if 1 // =================== Channels, cycles, Rssi  ===========================
 #define RCHNL_SERVICE   0
 #define RCHNL_MIN       1
-#define RCHNL_MAX       30
+#define RCHNL_MAX       18
+#define RCHNL_CNT       (RCHNL_MAX - RCHNL_MIN + 1)
 #define ID2RCHNL(ID)    (RCHNL_MIN + ID)
 
 #define RSSI_MIN        -75
@@ -99,6 +100,6 @@ public:
     void TryToSleep(uint32_t SleepDuration);
 };
 
-void OnRadioRx(uint8_t RChnl, int8_t Rssi);
+void OnRadioRx(uint8_t AID, int8_t Rssi);
 
 extern rLevel1_t Radio;
