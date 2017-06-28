@@ -197,43 +197,22 @@ const LedRGBChunk_t lsqStart[] = {
         {csEnd}
 };
 
-const LedRGBChunk_t lsqAccIdle[] = {
-        {csSetup, 0, {4,0,0}},
+const LedRGBChunk_t lsqFailure[] = {
+        {csSetup, 0, clRed},
         {csWait, 90},
-        {csSetup, 0, {0, 2, 0}},
-        {csEnd}
-};
-
-const LedRGBChunk_t lsqAccWaiting[] = {
-        {csSetup, 0, {4,0,0}},
+        {csSetup, 0, clRed},
         {csWait, 90},
-        {csSetup, 0, {0, 0, 4}},
+        {csSetup, 0, clRed},
+        {csWait, 90},
+        {csSetup, 0, clRed},
+        {csWait, 90},
+        {csSetup, 0, clRed},
+        {csWait, 90},
+        {csSetup, 0, clRed},
+        {csWait, 90},
         {csEnd}
 };
 
-const LedRGBChunk_t lsqIdle[] = {
-        {csSetup, 0, {0,2,0}},
-        {csEnd}
-};
-const LedRGBChunk_t lsqWaiting[] = {
-        {csSetup, 0, {0,0,4}},
-        {csEnd}
-};
-
-//const LedRGBChunk_t lsqFailure[] = {
-//        {csSetup, 0, clRed},
-//        {csWait, 99},
-//        {csSetup, 0, clBlack},
-//        {csWait, 99},
-//        {csSetup, 0, clRed},
-//        {csWait, 99},
-//        {csSetup, 0, clBlack},
-//        {csWait, 99},
-//        {csSetup, 0, clRed},
-//        {csWait, 99},
-//        {csSetup, 0, clBlack},
-//        {csEnd}
-//};
 
 //const LedRGBChunk_t lsqPrepare[] = {
 //        {csSetup, 0, clBlue},

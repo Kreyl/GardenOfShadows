@@ -11,15 +11,15 @@
 
 cc1101_t CC(CC_Setup0);
 
-#define DBG_PINS
+//#define DBG_PINS
 
 #ifdef DBG_PINS
 #define DBG_GPIO1   GPIOB
-#define DBG_PIN1    15
-#define DBG1_SET()  PinSetHi(DBG_GPIO1, DBG_PIN1)
-#define DBG1_CLR()  PinSetLo(DBG_GPIO1, DBG_PIN1)
+#define DBG_PIN1    4
+#define DBG1_SET()  PinSet(DBG_GPIO1, DBG_PIN1)
+#define DBG1_CLR()  PinClear(DBG_GPIO1, DBG_PIN1)
 #define DBG_GPIO2   GPIOB
-#define DBG_PIN2    14
+#define DBG_PIN2    9
 #define DBG2_SET()  PinSet(DBG_GPIO2, DBG_PIN2)
 #define DBG2_CLR()  PinClear(DBG_GPIO2, DBG_PIN2)
 #else
@@ -28,8 +28,7 @@ cc1101_t CC(CC_Setup0);
 #endif
 
 rLevel1_t Radio;
-rPkt_t PktTx;
-static bool IsOn = true;
+static rPkt_t PktRx;
 
 #if 1 // ================================ Task =================================
 static THD_WORKING_AREA(warLvl1Thread, 256);
@@ -37,36 +36,13 @@ __noreturn
 static void rLvl1Thread(void *arg) {
     chRegSetThreadName("rLvl1");
     while(true) {
-        RMsg_t msg = Radio.RMsgQ.Fetch(TIME_IMMEDIATE);
-        switch(msg.Cmd) {
-            case R_MSG_SET_PWR:
-                CC.SetTxPower(msg.Value);
-                break;
-
-            case R_MSG_SET_CHNL:
-                CC.SetChannel(msg.Value);
-                PktTx.DWord32 = msg.Value;
-                break;
-
-            case R_MSG_STANDBY:
-                IsOn = false;
-                CC.EnterPwrDown();
-                chThdSleepMilliseconds(4500);
-                break;
-
-            case R_MSG_WAKEUP:
-                IsOn = true;
-                break;
-
-            default: break;
+        for(uint8_t i=RCHNL_MIN; i<=RCHNL_MAX; i++) {
+            int8_t Rssi;
+            CC.SetChannel(i);
+            if(CC.Receive(RX_T_MS, &PktRx, &Rssi) == retvOk) {
+                OnRadioRx(i, Rssi);
+            }
         }
-
-        if(IsOn) {
-            DBG1_SET();
-            CC.Transmit(&PktTx);
-            DBG1_CLR();
-        }
-        chThdSleepMilliseconds(4);
     } // while true
 }
 #endif // task
@@ -83,7 +59,7 @@ uint8_t rLevel1_t::Init() {
     PinSetupOut(DBG_GPIO2, DBG_PIN2, omPushPull);
 #endif
 
-    RMsgQ.Init();
+//    RMsgQ.Init();
     if(CC.Init() == retvOk) {
 //        CC.SetTxPower(CC_PwrMinus30dBm);
         CC.SetTxPower(CC_Pwr0dBm);

@@ -11,7 +11,7 @@
 
 // ==== General ====
 #define BOARD_NAME          "GSLeaf01"
-#define APP_NAME            "Stone"
+#define APP_NAME            "GSLeaf"
 
 // MCU type as defined in the ST header.
 #define STM32L476xx
@@ -97,6 +97,9 @@
 #define SD_DAT3         GPIOC, 11, omPushPull, pudPullUp, SD_AF
 #define SD_CLK          GPIOC, 12, omPushPull, pudNone,   SD_AF
 #define SD_CMD          GPIOD,  2, omPushPull, pudPullUp, SD_AF
+
+// Radio: SPI, PGpio, Sck, Miso, Mosi, Cs, Gdo0
+#define CC_Setup0       SPI1, GPIOA, 5,6,7, 4, 3
 
 #endif // GPIO
 

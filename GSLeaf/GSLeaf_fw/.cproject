@@ -69,6 +69,7 @@
 									<listOptionValue builtIn="false" value="../os/hal/CMSIS"/>
 									<listOptionValue builtIn="false" value="../os/stm32L4xx"/>
 									<listOptionValue builtIn="false" value="../sd"/>
+									<listOptionValue builtIn="false" value="../Radio"/>
 								</option>
 								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.c.compiler.defs.781796898" name="Defined symbols (-D)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.c.compiler.defs" useByScannerDiscovery="false" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="CORTEX_USE_FPU=TRUE"/>
@@ -88,6 +89,7 @@
 									<listOptionValue builtIn="false" value="../os/hal/CMSIS"/>
 									<listOptionValue builtIn="false" value="../os/stm32L4xx"/>
 									<listOptionValue builtIn="false" value="../sd"/>
+									<listOptionValue builtIn="false" value="../Radio"/>
 								</option>
 								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.compiler.abiversion.1204829586" name="ABI version" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.compiler.abiversion" useByScannerDiscovery="true" value="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.compiler.abiversion.6" valueType="enumerated"/>
 								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.compiler.otheroptimizations.1307543423" name="Other optimization flags" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.compiler.otheroptimizations" useByScannerDiscovery="true" value="" valueType="string"/>

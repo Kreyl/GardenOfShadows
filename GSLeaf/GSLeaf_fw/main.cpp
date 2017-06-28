@@ -16,12 +16,15 @@
 #include "AuPlayer.h"
 #include "acc_mma8452.h"
 #include "kl_fs_utils.h"
+#include "radio_lvl1.h"
 
 // Forever
 EvtMsgQ_t<EvtMsg_t, MAIN_EVT_Q_LEN> EvtQMain;
 extern CmdUart_t Uart;
 void OnCmd(Shell_t *PShell);
 void ITask();
+
+//#define
 
 LedRGB_t Led { LED_RED_CH, LED_GREEN_CH, LED_BLUE_CH };
 PinOutput_t PwrEn(PWR_EN_PIN);
@@ -49,9 +52,7 @@ int main(void) {
 
     Clk.Select48MhzSrc(src48PllQ);
 
-    // LED
     Led.Init();
-    Led.StartOrRestart(lsqStart);
 
     PwrEn.Init();
     PwrEn.SetLo();
@@ -61,8 +62,8 @@ int main(void) {
     i2c1.Init();
     Audio.Init();
     Audio.SetSpeakerVolume(-96);    // To remove speaker pop at power on
-    Audio.DisableHeadphones();
-    Audio.EnableSpeakerMono();
+    Audio.DisableSpeakers();
+    Audio.EnableHeadphones();
 
 //    i2c1.ScanBus();
     Acc.Init();
@@ -70,17 +71,11 @@ int main(void) {
     SD.Init();
     Player.Init();
 
-    // Read settings
-    int8_t Volume = 0;
-    uint32_t PauseAfterS = 4;
-    iniRead<int8_t>("Settings.ini", "Common", "Volume", &Volume);
-    iniRead<uint32_t>("Settings.ini", "Common", "Pause", &PauseAfterS);
-    tmrPauseAfter.SetNewPeriod_s(PauseAfterS);
-    Printf("Volume %d; Pause %u\r", Volume, PauseAfterS);
-
-    Audio.SetSpeakerVolume(Volume);
+    Audio.SetSpeakerVolume(0);
     Audio.Standby();
 
+    if(Radio.Init() == retvOk) Led.StartOrRestart(lsqStart);
+    else Led.StartOrRestart(lsqFailure);
 
 //    Player.Play("alive.wav");
 
@@ -98,43 +93,47 @@ void ITask() {
                 ((Shell_t*)Msg.Ptr)->SignalCmdProcessed();
                 break;
 
-            case evtIdAcc:
-                if(State == stIdle) {
-                    Printf("AccWhenIdle\r");
-                    Led.StartOrRestart(lsqAccIdle);
-                    State = stPlaying;
-                    Audio.Resume();
-                    Player.PlayRandomFileFromDir("Sounds");
-//                    Player.Play("Alive.wav");
-                }
-                else if(State == stWaiting) {
-                    Printf("AccWhenW\r");
-                    Led.StartOrRestart(lsqAccWaiting);
-                    tmrPauseAfter.StartOrRestart();
-                }
-                break;
+//            case evtIdAcc:
+//                if(State == stIdle) {
+//                    Printf("AccWhenIdle\r");
+//                    Led.StartOrRestart(lsqAccIdle);
+//                    State = stPlaying;
+//                    Audio.Resume();
+//                    Player.PlayRandomFileFromDir("Sounds");
+////                    Player.Play("Alive.wav");
+//                }
+//                else if(State == stWaiting) {
+//                    Printf("AccWhenW\r");
+//                    Led.StartOrRestart(lsqAccWaiting);
+//                    tmrPauseAfter.StartOrRestart();
+//                }
+//                break;
 
-            case evtIdPlayEnd:
-                Printf("PlayEnd\r");
-                if(State == stPlaying) {
-                    tmrPauseAfter.StartOrRestart();
-                    State = stWaiting;
-                    Led.StartOrRestart(lsqWaiting);
-                }
-                Audio.Standby();
-                break;
+//            case evtIdPlayEnd:
+//                Printf("PlayEnd\r");
+//                if(State == stPlaying) {
+//                    tmrPauseAfter.StartOrRestart();
+//                    State = stWaiting;
+//                    Led.StartOrRestart(lsqWaiting);
+//                }
+//                Audio.Standby();
+//                break;
 
-            case evtIdPauseEnds:
-                if(State == stWaiting) {
-                    Led.StartOrRestart(lsqIdle);
-                    Printf("PauseEnd\r");
-                    State = stIdle;
-                }
-                break;
+//            case evtIdPauseEnds:
+//                if(State == stWaiting) {
+//                    Led.StartOrRestart(lsqIdle);
+//                    Printf("PauseEnd\r");
+//                    State = stIdle;
+//                }
+//                break;
 
             default: break;
         } // switch
     } // while true
+}
+
+void OnRadioRx(uint8_t RChnl, int8_t Rssi) {
+    Printf("Rx %u %d\r", RChnl, Rssi);
 }
 
 #if 1 // ======================= Command processing ============================
