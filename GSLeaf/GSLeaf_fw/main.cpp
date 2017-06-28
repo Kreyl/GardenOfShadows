@@ -189,6 +189,15 @@ void OnRadioRx(uint8_t AID, int8_t Rssi) {
     EvtQMain.SendNowOrExit(Msg);
 }
 
+void ProcessChargePin(PinSnsState_t *PState, uint32_t Len) {
+    if(*PState == pssFalling) { // Charge started
+        Led.StartOrContinue(lsqCharging);
+    }
+    if(*PState == pssRising) { // Charge ended
+        Led.StartOrContinue(lsqOperational);
+    }
+}
+
 #if 1 // ======================= Command processing ============================
 void OnCmd(Shell_t *PShell) {
 	Cmd_t *PCmd = &PShell->Cmd;

@@ -213,16 +213,17 @@ const LedRGBChunk_t lsqFailure[] = {
         {csEnd}
 };
 
+const LedRGBChunk_t lsqCharging[] = {
+        {csSetup, 360, clBlue},
+        {csSetup, 360, clBlack},
+        {csGoto, 0}
+};
 
-//const LedRGBChunk_t lsqPrepare[] = {
-//        {csSetup, 0, clBlue},
-//        {csEnd}
-//};
-//const LedRGBChunk_t lsqOperational[] = {
-//        {csSetup, 0, clGreen},
-//        {csEnd}
-//};
-//
+const LedRGBChunk_t lsqOperational[] = {
+        {csSetup, 90, {0, 2, 0}},
+        {csEnd}
+};
+
 //const LedRGBChunk_t lsqHit[] = {
 //        {csSetup, 0, clYellow},
 //        {csWait, 99},

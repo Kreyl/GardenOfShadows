@@ -21,13 +21,16 @@
 #if SIMPLESENSORS_ENABLED
 #define SNS_POLL_PERIOD_MS      72
 
-// Button handler
+// Handlers
 extern void ProcessButtons(PinSnsState_t *PState, uint32_t Len);
+extern void ProcessChargePin(PinSnsState_t *PState, uint32_t Len);
 
 const PinSns_t PinSns[] = {
         // Buttons
         {BTN1_PIN, ProcessButtons},
         {BTN2_PIN, ProcessButtons},
+        // Charge pin
+        {CHARGE_PIN, ProcessChargePin},
 };
 #define PIN_SNS_CNT     countof(PinSns)
 

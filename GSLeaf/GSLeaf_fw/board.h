@@ -55,6 +55,8 @@
 
 // PWR_EN
 #define PWR_EN_PIN      GPIOA, 15, omPushPull
+// Charge
+#define CHARGE_PIN      GPIOB, 11, pudPullUp
 
 // CS42L52
 #define AU_RESET        GPIOB, 3, omPushPull
