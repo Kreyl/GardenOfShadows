@@ -11,7 +11,7 @@
 #include "ff.h"
 
 #define FRAME_BUF_SZ        4096
-#define MAX_NAME_LEN        48
+#define MAX_NAME_LEN        128
 
 class AuPlayer_t {
 private:

@@ -27,6 +27,8 @@
 extern CS42L52_t Audio;
 extern AuPlayer_t Player;
 
+static char Filename[MAX_NAME_LEN];
+
 struct WavFileInfo_t {
     uint32_t SampleRate;
     uint32_t BytesPerSecond;
@@ -286,7 +288,6 @@ void AuPlayer_t::PlayRandomFileFromDir(const char* DirName) {
     PreviousN = N;
     // Iterate files in dir until success
     uint32_t Counter = 0;
-    char Filename[MAX_NAME_LEN];
     Rslt = f_opendir(&Dir, DirName);
     if(Rslt != FR_OK) return;
     while(true) {
