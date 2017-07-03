@@ -183,7 +183,7 @@ void ITask() {
 }
 
 void OnRadioRx(uint8_t AID, int8_t Rssi) {
-//    Printf("Rx %u %d\r", AID, Rssi);
+    Printf("Rx %u %d\r", AID, Rssi);
     if(AID < RCHNL_MIN or AID > RCHNL_MAX) return;
     // Inform main thread
     EvtMsg_t Msg(evtIdOnRx, (int32_t)AID);
