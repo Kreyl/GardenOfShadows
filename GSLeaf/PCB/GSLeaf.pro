@@ -1,4 +1,4 @@
-update=05.06.2017 19:59:14
+update=06.07.2017 17:40:42
 version=1
 last_client=kicad
 [cvpcb]
@@ -52,3 +52,4 @@ LibName11=RF ICs
 LibName12=Switches
 LibName13=Sensors
 LibName14=Antennas_kl
+LibName15=SmartCard_kl
