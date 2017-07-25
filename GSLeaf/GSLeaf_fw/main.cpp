@@ -16,7 +16,6 @@
 #include "AuPlayer.h"
 #include "acc_mma8452.h"
 #include "kl_fs_utils.h"
-#include "radio_lvl1.h"
 #include "SimpleSensors.h"
 
 // Forever
@@ -32,28 +31,6 @@ PinOutput_t PwrEn(PWR_EN_PIN);
 CS42L52_t Audio;
 AuPlayer_t Player;
 
-#if 1 // ============================= Rx Table ================================
-class RxTable_t {
-private:
-    systime_t ITable[RCHNL_CNT];
-public:
-    void Put(int32_t Chnl) {
-        int32_t Indx = Chnl - RCHNL_MIN;
-        ITable[Indx] = chVTGetSystemTimeX();
-    }
-
-    bool EnoughTimePassed(int32_t Chnl) {
-        int32_t Indx = Chnl - RCHNL_MIN;
-//        Printf("%u\r", chVTTimeElapsedSinceX(ITable[Indx]));
-        return (chVTTimeElapsedSinceX(ITable[Indx]) >= S2ST(PAUSE_BEFORE_REPEAT_S));
-    }
-
-    RxTable_t() {
-        for(int i=0; i<RCHNL_CNT; i++) ITable[i] = 0;
-    }
-} RxTable;
-#endif
-
 #define ID_SURROUND         -1
 #define DIRNAME_SURROUND    "Surround"
 int32_t IdPlayingNow = ID_SURROUND, IdPlayNext = ID_SURROUND;
@@ -63,7 +40,7 @@ TmrKL_t tmrPauseAfter {evtIdPauseEnds, tktOneShot};
 
 int main(void) {
     // ==== Setup clock frequency ====
-    Clk.SetHiPerfMode();
+//    Clk.SetHiPerfMode();
     Clk.UpdateFreqValues();
 
     // Init OS
@@ -75,37 +52,37 @@ int main(void) {
     Printf("\r%S %S\r\n", APP_NAME, BUILD_TIME);
     Clk.PrintFreqs();
 
-    Clk.Select48MhzSrc(src48PllQ);
+//    Clk.Select48MhzSrc(src48PllQ);
 
-    Led.Init();
+//    Led.Init();
 
-    PwrEn.Init();
-    PwrEn.SetLo();
-    chThdSleepMilliseconds(18);
+//    PwrEn.Init();
+//    PwrEn.SetLo();
+//    chThdSleepMilliseconds(18);
 
     // Audio
-    i2c1.Init();
-    Audio.Init();
-    Audio.SetSpeakerVolume(-96);    // To remove speaker pop at power on
-    Audio.DisableSpeakers();
-    Audio.EnableHeadphones();
+//    i2c1.Init();
+//    Audio.Init();
+//    Audio.SetSpeakerVolume(-96);    // To remove speaker pop at power on
+//    Audio.DisableSpeakers();
+//    Audio.EnableHeadphones();
 
 //    i2c1.ScanBus();
-    Acc.Init();
+//    Acc.Init();
 
-    SD.Init();
-    Player.Init();
+//    SD.Init();
+//    Player.Init();
 
 //    Audio.SetSpeakerVolume(0);
 //    Audio.Standby();
 
-    if(Radio.Init() == retvOk) Led.StartOrRestart(lsqStart);
-    else Led.StartOrRestart(lsqFailure);
+//    if(Radio.Init() == retvOk) Led.StartOrRestart(lsqStart);
+//    else Led.StartOrRestart(lsqFailure);
 
-    SimpleSensors::Init();
+//    SimpleSensors::Init();
 
     // Start playing surround music
-    Player.PlayRandomFileFromDir(DIRNAME_SURROUND);
+//    Player.PlayRandomFileFromDir(DIRNAME_SURROUND);
 
     // Main cycle
     ITask();
@@ -124,24 +101,24 @@ void ITask() {
             case evtIdOnRx: {
                 int32_t rxID = Msg.Value;
                 if(IdPlayingNow == ID_SURROUND) {
-                    if(RxTable.EnoughTimePassed(rxID)) {
-                        // Fadeout surround and play rcvd id
-                        IdPlayNext = rxID;
-                        Player.FadeOut();
-                    }
+//                    if(RxTable.EnoughTimePassed(rxID)) {
+//                        // Fadeout surround and play rcvd id
+//                        IdPlayNext = rxID;
+//                        Player.FadeOut();
+//                    }
                 }
                 else { // Playing some ID
                     if(rxID != IdPlayingNow) {  // Some new ID received
                         // Switch to new ID if current one is offline for enough time
-                        if(RxTable.EnoughTimePassed(IdPlayingNow)) {
+//                        if(RxTable.EnoughTimePassed(IdPlayingNow)) {
                             // Fadeout current and play rcvd id
-                            IdPlayNext = rxID;
-                            Player.FadeOut();
-                        }
+//                            IdPlayNext = rxID;
+//                            Player.FadeOut();
+//                        }
                     }
                 }
                 // Put timestamp to table
-                RxTable.Put(rxID);
+//                RxTable.Put(rxID);
             } break;
 
 //            case evtIdAcc:
@@ -184,7 +161,7 @@ void ITask() {
 
 void OnRadioRx(uint8_t AID, int8_t Rssi) {
     Printf("Rx %u %d\r", AID, Rssi);
-    if(AID < RCHNL_MIN or AID > RCHNL_MAX) return;
+//    if(AID < RCHNL_MIN or AID > RCHNL_MAX) return;
     // Inform main thread
     EvtMsg_t Msg(evtIdOnRx, (int32_t)AID);
     EvtQMain.SendNowOrExit(Msg);

@@ -1,5 +1,5 @@
 /*
-    ChibiOS - Copyright (C) 2006..2015 Giovanni Di Sirio
+    ChibiOS - Copyright (C) 2006..2016 Giovanni Di Sirio
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
 */
 
 /**
- * @file    STM32/st_lld.h
+ * @file    TIMv1/hal_st_lld.h
  * @brief   ST Driver subsystem low level driver header.
  * @details This header is designed to be include-able without having to
  *          include other files from the HAL.
@@ -24,8 +24,8 @@
  * @{
  */
 
-#ifndef _ST_LLD_H_
-#define _ST_LLD_H_
+#ifndef HAL_ST_LLD_H
+#define HAL_ST_LLD_H
 
 #include "mcuconf.h"
 #include "stm32_registry.h"
@@ -88,12 +88,6 @@
 #error "TIM5 not present"
 #endif
 #define STM32_ST_TIM                              STM32_TIM5
-
-#elif STM32_ST_USE_TIMER == 14
-#if !STM32_HAS_TIM14
-#error "TIM14 not present"
-#endif
-#define STM32_ST_TIM                              STM32_TIM14
 
 #elif STM32_ST_USE_TIMER == 21
 #if !STM32_HAS_TIM21
@@ -211,6 +205,6 @@ static inline bool st_lld_is_alarm_active(void) {
   return (bool)((STM32_ST_TIM->DIER & STM32_TIM_DIER_CC1IE) != 0);
 }
 
-#endif /* _ST_LLD_H_ */
+#endif /* HAL_ST_LLD_H */
 
 /** @} */

@@ -1,5 +1,5 @@
 /*
-    ChibiOS - Copyright (C) 2006..2015 Giovanni Di Sirio.
+    ChibiOS - Copyright (C) 2006..2016 Giovanni Di Sirio.
 
     This file is part of ChibiOS.
 
@@ -25,8 +25,8 @@
  * @{
  */
 
-#ifndef _CHMEMCORE_H_
-#define _CHMEMCORE_H_
+#ifndef CHMEMCORE_H
+#define CHMEMCORE_H
 
 #if (CH_CFG_USE_MEMCORE == TRUE) || defined(__DOXYGEN__)
 
@@ -38,9 +38,28 @@
 /* Module pre-compile time settings.                                         */
 /*===========================================================================*/
 
+/**
+ * @brief   Managed RAM size.
+ * @details Size of the RAM area to be managed by the OS. If set to zero
+ *          then the whole available RAM is used. The core memory is made
+ *          available to the heap allocator and/or can be used directly through
+ *          the simplified core memory allocator.
+ *
+ * @note    In order to let the OS manage the whole RAM the linker script must
+ *          provide the @p __heap_base__ and @p __heap_end__ symbols.
+ * @note    Requires @p CH_CFG_USE_MEMCORE.
+ */
+#if !defined(CH_CFG_MEMCORE_SIZE) || defined(__DOXYGEN__)
+#define CH_CFG_MEMCORE_SIZE                 0
+#endif
+
 /*===========================================================================*/
 /* Derived constants and error checks.                                       */
 /*===========================================================================*/
+
+#if CH_CFG_MEMCORE_SIZE < 0
+#error "invalid CH_CFG_MEMCORE_SIZE value specified"
+#endif
 
 /*===========================================================================*/
 /* Module data structures and types.                                         */
@@ -49,41 +68,11 @@
 /**
  * @brief   Memory get function.
  */
-typedef void *(*memgetfunc_t)(size_t size);
+typedef void *(*memgetfunc_t)(size_t size, unsigned align);
 
 /*===========================================================================*/
 /* Module macros.                                                            */
 /*===========================================================================*/
-
-/**
- * @name    Alignment support macros
- */
-/**
- * @brief   Alignment size constant.
- */
-#define MEM_ALIGN_SIZE      sizeof(stkalign_t)
-
-/**
- * @brief   Alignment mask constant.
- */
-#define MEM_ALIGN_MASK      (MEM_ALIGN_SIZE - 1U)
-
-/**
- * @brief   Alignment helper macro.
- */
-#define MEM_ALIGN_PREV(p)   ((size_t)(p) & ~MEM_ALIGN_MASK)
-
-/**
- * @brief   Alignment helper macro.
- */
-#define MEM_ALIGN_NEXT(p)   MEM_ALIGN_PREV((size_t)(p) + MEM_ALIGN_MASK)
-
-/**
- * @brief   Returns whatever a pointer or memory size is aligned to
- *          the type @p stkalign_t.
- */
-#define MEM_IS_ALIGNED(p)   (((size_t)(p) & MEM_ALIGN_MASK) == 0U)
-/** @} */
 
 /*===========================================================================*/
 /* External declarations.                                                    */
@@ -93,8 +82,8 @@ typedef void *(*memgetfunc_t)(size_t size);
 extern "C" {
 #endif
   void _core_init(void);
-  void *chCoreAlloc(size_t size);
-  void *chCoreAllocI(size_t size);
+  void *chCoreAllocAlignedI(size_t size, unsigned align);
+  void *chCoreAllocAligned(size_t size, unsigned align);
   size_t chCoreGetStatusX(void);
 #ifdef __cplusplus
 }
@@ -104,8 +93,40 @@ extern "C" {
 /* Module inline functions.                                                  */
 /*===========================================================================*/
 
+/**
+ * @brief   Allocates a memory block.
+ * @details The allocated block is guaranteed to be properly aligned for a
+ *          pointer data type.
+ *
+ * @param[in] size      the size of the block to be allocated.
+ * @return              A pointer to the allocated memory block.
+ * @retval NULL         allocation failed, core memory exhausted.
+ *
+ * @iclass
+ */
+static inline void *chCoreAllocI(size_t size) {
+
+  return chCoreAllocAlignedI(size, PORT_NATURAL_ALIGN);
+}
+
+/**
+ * @brief   Allocates a memory block.
+ * @details The allocated block is guaranteed to be properly aligned for a
+ *          pointer data type.
+ *
+ * @param[in] size      the size of the block to be allocated.
+ * @return              A pointer to the allocated memory block.
+ * @retval NULL         allocation failed, core memory exhausted.
+ *
+ * @api
+ */
+static inline void *chCoreAlloc(size_t size) {
+
+  return chCoreAllocAligned(size, PORT_NATURAL_ALIGN);
+}
+
 #endif /* CH_CFG_USE_MEMCORE == TRUE */
 
-#endif /* _CHMEMCORE_H_ */
+#endif /* CHMEMCORE_H */
 
 /** @} */

@@ -1,5 +1,5 @@
 /*
-    ChibiOS - Copyright (C) 2006..2015 Giovanni Di Sirio
+    ChibiOS - Copyright (C) 2006..2016 Giovanni Di Sirio
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -42,6 +42,9 @@ void hal_lld_init(void) {
   /* PWR clock enabled.*/
   rccEnablePWRInterface(FALSE);
 
+  /* Initializes the backup domain.*/
+//  hal_lld_backup_domain_init();
+
 #if defined(STM32_DMA_REQUIRED)
   dmaInit();
 #endif
@@ -60,6 +63,6 @@ void hal_lld_init(void) {
 
   /* Enabling independent VDDIO2 required by GPIOG.*/
 #if STM32_HAS_GPIOG
-//  PWR->CR2 |= PWR_CR2_IOSV;
+  PWR->CR2 |= PWR_CR2_IOSV;
 #endif /* STM32_HAS_GPIOG */
 }

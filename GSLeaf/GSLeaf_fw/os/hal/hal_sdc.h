@@ -1,5 +1,5 @@
 /*
-    ChibiOS - Copyright (C) 2006..2015 Giovanni Di Sirio
+    ChibiOS - Copyright (C) 2006..2016 Giovanni Di Sirio
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -15,15 +15,15 @@
 */
 
 /**
- * @file    sdc.h
+ * @file    hal_sdc.h
  * @brief   SDC Driver macros and structures.
  *
  * @addtogroup SDC
  * @{
  */
 
-#ifndef _SDC_H_
-#define _SDC_H_
+#ifndef HAL_SDC_H
+#define HAL_SDC_H
 
 #if (HAL_USE_SDC == TRUE) || defined(__DOXYGEN__)
 
@@ -133,7 +133,7 @@ typedef enum {
   SDC_CLK_50MHz
 } sdcbusclk_t;
 
-#include "sdc_lld.h"
+#include "hal_sdc_lld.h"
 
 /*===========================================================================*/
 /* Driver macros.                                                            */
@@ -204,6 +204,6 @@ extern "C" {
 
 #endif /* HAL_USE_SDC == TRUE */
 
-#endif /* _SDC_H_ */
+#endif /* HAL_SDC_H */
 
 /** @} */

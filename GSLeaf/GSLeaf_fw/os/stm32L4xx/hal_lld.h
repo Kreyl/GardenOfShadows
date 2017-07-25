@@ -1,5 +1,5 @@
 /*
-    ChibiOS - Copyright (C) 2006..2015 Giovanni Di Sirio
+    ChibiOS - Copyright (C) 2006..2016 Giovanni Di Sirio
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -47,8 +47,9 @@
  * @name    Platform identification
  * @{
  */
-#if defined(STM32L471xx) || defined(STM32L475xx) ||                         \
-    defined(STM32L476xx) || defined(__DOXYGEN__)
+#if defined(STM32L432xx) || defined(STM32L471xx) ||                         \
+    defined(STM32L475xx) || defined(STM32L476xx) ||                         \
+    defined(__DOXYGEN__)
 #define PLATFORM_NAME           "STM32L4xx Ultra Low Power"
 
 #elif defined(STM32L485xx) || defined(STM32L486xx)
@@ -346,6 +347,396 @@
 #define STM32_PVD_ENABLE                    FALSE
 #endif
 
+/**
+ * @brief   Sets voltage level for programmable voltage detector.
+ */
+#if !defined(STM32_PLS) || defined(__DOXYGEN__)
+#define STM32_PLS                           STM32_PLS_LEV0
+#endif
+
+/**
+ * @brief   Enables or disables the HSI16 clock source.
+ */
+#if !defined(STM32_HSI16_ENABLED) || defined(__DOXYGEN__)
+#define STM32_HSI16_ENABLED                 FALSE
+#endif
+
+/**
+ * @brief   Enables or disables the LSI clock source.
+ */
+#if !defined(STM32_LSI_ENABLED) || defined(__DOXYGEN__)
+#define STM32_LSI_ENABLED                   TRUE
+#endif
+
+/**
+ * @brief   Enables or disables the HSE clock source.
+ */
+#if !defined(STM32_HSE_ENABLED) || defined(__DOXYGEN__)
+#define STM32_HSE_ENABLED                   FALSE
+#endif
+
+/**
+ * @brief   Enables or disables the LSE clock source.
+ */
+#if !defined(STM32_LSE_ENABLED) || defined(__DOXYGEN__)
+#define STM32_LSE_ENABLED                   FALSE
+#endif
+
+/**
+ * @brief   Enables or disables the MSI PLL on LSE clock source.
+ */
+#if !defined(STM32_MSIPLL_ENABLED) || defined(__DOXYGEN__)
+#define STM32_MSIPLL_ENABLED                FALSE
+#endif
+
+/**
+ * @brief   ADC clock setting.
+ */
+#if !defined(STM32_ADC_CLOCK_ENABLED) || defined(__DOXYGEN__)
+#define STM32_ADC_CLOCK_ENABLED             TRUE
+#endif
+
+/**
+ * @brief   USB clock setting.
+ */
+#if !defined(STM32_USB_CLOCK_ENABLED) || defined(__DOXYGEN__)
+#define STM32_USB_CLOCK_ENABLED             TRUE
+#endif
+
+/**
+ * @brief   SAI1 clock setting.
+ */
+#if !defined(STM32_SAI1_CLOCK_ENABLED) || defined(__DOXYGEN__)
+#define STM32_SAI1_CLOCK_ENABLED            TRUE
+#endif
+
+/**
+ * @brief   SAI2 clock setting.
+ */
+#if !defined(STM32_SAI2_CLOCK_ENABLED) || defined(__DOXYGEN__)
+#define STM32_SAI2_CLOCK_ENABLED            TRUE
+#endif
+
+/**
+ * @brief   MSI frequency setting.
+ */
+#if !defined(STM32_MSIRANGE) || defined(__DOXYGEN__)
+#define STM32_MSIRANGE                      STM32_MSIRANGE_4M
+#endif
+
+/**
+ * @brief   MSI frequency setting after standby.
+ */
+#if !defined(STM32_MSISRANGE) || defined(__DOXYGEN__)
+#define STM32_MSISRANGE                     STM32_MSISRANGE_4M
+#endif
+
+/**
+ * @brief   Main clock source selection.
+ * @note    If the selected clock source is not the PLL then the PLL is not
+ *          initialized and started.
+ * @note    The default value is calculated for a 80MHz system clock from
+ *          the internal 4MHz MSI clock.
+ */
+#if !defined(STM32_SW) || defined(__DOXYGEN__)
+#define STM32_SW                            STM32_SW_PLL
+#endif
+
+/**
+ * @brief   Clock source for the PLL.
+ * @note    This setting has only effect if the PLL is selected as the
+ *          system clock source.
+ * @note    The default value is calculated for a 80MHz system clock from
+ *          the internal 4MHz MSI clock.
+ */
+#if !defined(STM32_PLLSRC) || defined(__DOXYGEN__)
+#define STM32_PLLSRC                        STM32_PLLSRC_MSI
+#endif
+
+/**
+ * @brief   PLLM divider value.
+ * @note    The allowed values are 1..8.
+ * @note    The default value is calculated for a 80MHz system clock from
+ *          the internal 4MHz MSI clock.
+ */
+#if !defined(STM32_PLLM_VALUE) || defined(__DOXYGEN__)
+#define STM32_PLLM_VALUE                    1
+#endif
+
+/**
+ * @brief   PLLN multiplier value.
+ * @note    The allowed values are 8..86.
+ * @note    The default value is calculated for a 80MHz system clock from
+ *          the internal 4MHz MSI clock.
+ */
+#if !defined(STM32_PLLN_VALUE) || defined(__DOXYGEN__)
+#define STM32_PLLN_VALUE                    80
+#endif
+
+/**
+ * @brief   PLLP divider value.
+ * @note    The allowed values are 7, 17.
+ * @note    The default value is calculated for a 80MHz system clock from
+ *          the internal 4MHz MSI clock.
+ */
+#if !defined(STM32_PLLP_VALUE) || defined(__DOXYGEN__)
+#define STM32_PLLP_VALUE                    7
+#endif
+
+/**
+ * @brief   PLLQ divider value.
+ * @note    The allowed values are 2, 4, 6, 8.
+ * @note    The default value is calculated for a 80MHz system clock from
+ *          the internal 4MHz MSI clock.
+ */
+#if !defined(STM32_PLLQ_VALUE) || defined(__DOXYGEN__)
+#define STM32_PLLQ_VALUE                    6
+#endif
+
+/**
+ * @brief   PLLR divider value.
+ * @note    The allowed values are 2, 4, 6, 8.
+ * @note    The default value is calculated for a 80MHz system clock from
+ *          the internal 4MHz MSI clock.
+ */
+#if !defined(STM32_PLLR_VALUE) || defined(__DOXYGEN__)
+#define STM32_PLLR_VALUE                    4
+#endif
+
+/**
+ * @brief   AHB prescaler value.
+ * @note    The default value is calculated for a 80MHz system clock from
+ *          the internal 4MHz MSI clock.
+ */
+#if !defined(STM32_HPRE) || defined(__DOXYGEN__)
+#define STM32_HPRE                          STM32_HPRE_DIV1
+#endif
+
+/**
+ * @brief   APB1 prescaler value.
+ */
+#if !defined(STM32_PPRE1) || defined(__DOXYGEN__)
+#define STM32_PPRE1                         STM32_PPRE1_DIV1
+#endif
+
+/**
+ * @brief   APB2 prescaler value.
+ */
+#if !defined(STM32_PPRE2) || defined(__DOXYGEN__)
+#define STM32_PPRE2                         STM32_PPRE2_DIV1
+#endif
+
+/**
+ * @brief   STOPWUCK clock setting.
+ */
+#if !defined(STM32_STOPWUCK) || defined(__DOXYGEN__)
+#define STM32_STOPWUCK                      STM32_STOPWUCK_MSI
+#endif
+
+/**
+ * @brief   MCO clock source.
+ */
+#if !defined(STM32_MCOSEL) || defined(__DOXYGEN__)
+#define STM32_MCOSEL                        STM32_MCOSEL_NOCLOCK
+#endif
+
+/**
+ * @brief   MCO divider setting.
+ */
+#if !defined(STM32_MCOPRE) || defined(__DOXYGEN__)
+#define STM32_MCOPRE                        STM32_MCOPRE_DIV1
+#endif
+
+/**
+ * @brief   LSCO clock source.
+ */
+#if !defined(STM32_LSCOSEL) || defined(__DOXYGEN__)
+#define STM32_LSCOSEL                       STM32_LSCOSEL_NOCLOCK
+#endif
+
+/**
+ * @brief   PLLSAI1N multiplier value.
+ * @note    The allowed values are 8..86.
+ */
+#if !defined(STM32_PLLSAI1N_VALUE) || defined(__DOXYGEN__)
+#define STM32_PLLSAI1N_VALUE                80
+#endif
+
+/**
+ * @brief   PLLSAI1P divider value.
+ * @note    The allowed values are 7, 17.
+ */
+#if !defined(STM32_PLLSAI1P_VALUE) || defined(__DOXYGEN__)
+#define STM32_PLLSAI1P_VALUE                7
+#endif
+
+/**
+ * @brief   PLLSAI1Q divider value.
+ * @note    The allowed values are 2, 4, 6, 8.
+ */
+#if !defined(STM32_PLLSAI1Q_VALUE) || defined(__DOXYGEN__)
+#define STM32_PLLSAI1Q_VALUE                6
+#endif
+
+/**
+ * @brief   PLLSAI1R divider value.
+ * @note    The allowed values are 2, 4, 6, 8.
+ */
+#if !defined(STM32_PLLSAI1R_VALUE) || defined(__DOXYGEN__)
+#define STM32_PLLSAI1R_VALUE                4
+#endif
+
+/**
+ * @brief   PLLSAI2N multiplier value.
+ * @note    The allowed values are 8..86.
+ */
+#if !defined(STM32_PLLSAI2N_VALUE) || defined(__DOXYGEN__)
+#define STM32_PLLSAI2N_VALUE                80
+#endif
+
+/**
+ * @brief   PLLSAI2P divider value.
+ * @note    The allowed values are 7, 17.
+ */
+#if !defined(STM32_PLLSAI2P_VALUE) || defined(__DOXYGEN__)
+#define STM32_PLLSAI2P_VALUE                7
+#endif
+
+/**
+ * @brief   PLLSAI2R divider value.
+ * @note    The allowed values are 2, 4, 6, 8.
+ */
+#if !defined(STM32_PLLSAI2R_VALUE) || defined(__DOXYGEN__)
+#define STM32_PLLSAI2R_VALUE                4
+#endif
+
+/**
+ * @brief   USART1 clock source.
+ */
+#if !defined(STM32_USART1SEL) || defined(__DOXYGEN__)
+#define STM32_USART1SEL                     STM32_USART1SEL_SYSCLK
+#endif
+
+/**
+ * @brief   USART2 clock source.
+ */
+#if !defined(STM32_USART2SEL) || defined(__DOXYGEN__)
+#define STM32_USART2SEL                     STM32_USART2SEL_SYSCLK
+#endif
+
+/**
+ * @brief   USART3 clock source.
+ */
+#if !defined(STM32_USART3SEL) || defined(__DOXYGEN__)
+#define STM32_USART3SEL                     STM32_USART3SEL_SYSCLK
+#endif
+
+/**
+ * @brief   UART4 clock source.
+ */
+#if !defined(STM32_UART4SEL) || defined(__DOXYGEN__)
+#define STM32_UART4SEL                      STM32_UART4SEL_SYSCLK
+#endif
+
+/**
+ * @brief   UART5 clock source.
+ */
+#if !defined(STM32_UART5SEL) || defined(__DOXYGEN__)
+#define STM32_UART5SEL                      STM32_UART5SEL_SYSCLK
+#endif
+
+/**
+ * @brief   LPUART1 clock source.
+ */
+#if !defined(STM32_LPUART1SEL) || defined(__DOXYGEN__)
+#define STM32_LPUART1SEL                    STM32_LPUART1SEL_SYSCLK
+#endif
+
+/**
+ * @brief   I2C1 clock source.
+ */
+#if !defined(STM32_I2C1SEL) || defined(__DOXYGEN__)
+#define STM32_I2C1SEL                       STM32_I2C1SEL_SYSCLK
+#endif
+
+/**
+ * @brief   I2C2 clock source.
+ */
+#if !defined(STM32_I2C2SEL) || defined(__DOXYGEN__)
+#define STM32_I2C2SEL                       STM32_I2C2SEL_SYSCLK
+#endif
+
+/**
+ * @brief   I2C3 clock source.
+ */
+#if !defined(STM32_I2C3SEL) || defined(__DOXYGEN__)
+#define STM32_I2C3SEL                       STM32_I2C3SEL_SYSCLK
+#endif
+
+/**
+ * @brief   LPTIM1 clock source.
+ */
+#if !defined(STM32_LPTIM1SEL) || defined(__DOXYGEN__)
+#define STM32_LPTIM1SEL                     STM32_LPTIM1SEL_PCLK1
+#endif
+
+/**
+ * @brief   LPTIM2 clock source.
+ */
+#if !defined(STM32_LPTIM2SEL) || defined(__DOXYGEN__)
+#define STM32_LPTIM2SEL                     STM32_LPTIM2SEL_PCLK1
+#endif
+
+/**
+ * @brief   SAI1SEL value (SAI1 clock source).
+ */
+#if !defined(STM32_SAI1SEL) || defined(__DOXYGEN__)
+#define STM32_SAI1SEL                       STM32_SAI1SEL_OFF
+#endif
+
+/**
+ * @brief   SAI2SEL value (SAI2 clock source).
+ */
+#if !defined(STM32_SAI2SEL) || defined(__DOXYGEN__)
+#define STM32_SAI2SEL                       STM32_SAI2SEL_OFF
+#endif
+
+/**
+ * @brief   CLK48SEL value (48MHz clock source).
+ */
+#if !defined(STM32_CLK48SEL) || defined(__DOXYGEN__)
+#define STM32_CLK48SEL                      STM32_CLK48SEL_PLL
+#endif
+
+/**
+ * @brief   ADCSEL value (ADCs clock source).
+ */
+#if !defined(STM32_ADCSEL) || defined(__DOXYGEN__)
+#define STM32_ADCSEL                        STM32_ADCSEL_SYSCLK
+#endif
+
+/**
+ * @brief   SWPMI1SEL value (SWPMI clock source).
+ */
+#if !defined(STM32_SWPMI1SEL) || defined(__DOXYGEN__)
+#define STM32_SWPMI1SEL                     STM32_SWPMI1SEL_PCLK1
+#endif
+
+/**
+ * @brief   DFSDMSEL value (DFSDM clock source).
+ */
+#if !defined(STM32_DFSDMSEL) || defined(__DOXYGEN__)
+#define STM32_DFSDMSEL                      STM32_DFSDMSEL_PCLK1
+#endif
+
+/**
+ * @brief   RTC/LCD clock source.
+ */
+#if !defined(STM32_RTCSEL) || defined(__DOXYGEN__)
+#define STM32_RTCSEL                        STM32_RTCSEL_LSI
+#endif
+/** @} */
+
 /*===========================================================================*/
 /* Derived constants and error checks.                                       */
 /*===========================================================================*/
@@ -357,6 +748,130 @@
 #error "Using a wrong mcuconf.h file, STM32L4xx_MCUCONF not defined"
 #endif
 
+/**
+ * @brief   Maximum SYSCLK clock frequency at current voltage setting.
+ */
+#define STM32_SYSCLK_MAX            80000000
+
+/**
+ * @brief   Maximum HSE clock frequency at current voltage setting.
+ */
+#define STM32_HSECLK_MAX            48000000
+
+/**
+ * @brief   Maximum HSE clock frequency using an external source.
+ */
+#define STM32_HSECLK_BYP_MAX        48000000
+
+/**
+ * @brief   Minimum HSE clock frequency.
+ */
+#define STM32_HSECLK_MIN            4000000
+
+/**
+ * @brief   Minimum HSE clock frequency using an external source.
+ */
+#define STM32_HSECLK_BYP_MIN        8000000
+
+/**
+ * @brief   Maximum LSE clock frequency.
+ */
+#define STM32_LSECLK_MAX            32768
+
+/**
+ * @brief   Maximum LSE clock frequency.
+ */
+#define STM32_LSECLK_BYP_MAX        1000000
+
+/**
+ * @brief   Minimum LSE clock frequency.
+ */
+#define STM32_LSECLK_MIN            32768
+
+/**
+ * @brief   Minimum LSE clock frequency.
+ */
+#define STM32_LSECLK_BYP_MIN        32768
+
+/**
+ * @brief   Maximum PLLs input clock frequency.
+ */
+#define STM32_PLLIN_MAX             16000000
+
+/**
+ * @brief   Minimum PLLs input clock frequency.
+ */
+#define STM32_PLLIN_MIN             4000000
+
+/**
+ * @brief   Maximum VCO clock frequency at current voltage setting.
+ */
+#define STM32_PLLVCO_MAX            344000000
+
+/**
+ * @brief   Minimum VCO clock frequency at current voltage setting.
+ */
+#define STM32_PLLVCO_MIN            64000000
+
+/**
+ * @brief   Maximum PLL-P output clock frequency.
+ */
+#define STM32_PLLP_MAX              80000000
+
+/**
+ * @brief   Minimum PLL-P output clock frequency.
+ */
+#define STM32_PLLP_MIN              2064500
+
+/**
+ * @brief   Maximum PLL-Q output clock frequency.
+ */
+#define STM32_PLLQ_MAX              80000000
+
+/**
+ * @brief   Minimum PLL-Q output clock frequency.
+ */
+#define STM32_PLLQ_MIN              8000000
+
+/**
+ * @brief   Maximum PLL-R output clock frequency.
+ */
+#define STM32_PLLR_MAX              80000000
+
+/**
+ * @brief   Minimum PLL-R output clock frequency.
+ */
+#define STM32_PLLR_MIN              8000000
+
+/**
+ * @brief   Maximum APB1 clock frequency.
+ */
+#define STM32_PCLK1_MAX             80000000
+
+/**
+ * @brief   Maximum APB2 clock frequency.
+ */
+#define STM32_PCLK2_MAX             80000000
+
+/**
+ * @brief   Maximum ADC clock frequency.
+ */
+#define STM32_ADCCLK_MAX            80000000
+/** @} */
+
+
+
+/*===========================================================================*/
+/* Driver data structures and types.                                         */
+/*===========================================================================*/
+
+/*===========================================================================*/
+/* Driver macros.                                                            */
+/*===========================================================================*/
+
+/*===========================================================================*/
+/* External declarations.                                                    */
+/*===========================================================================*/
 
 /* Various helpers.*/
 #include "nvic.h"
@@ -367,7 +882,6 @@
 extern "C" {
 #endif
   void hal_lld_init(void);
-  void stm32_clock_init(void);
 #ifdef __cplusplus
 }
 #endif

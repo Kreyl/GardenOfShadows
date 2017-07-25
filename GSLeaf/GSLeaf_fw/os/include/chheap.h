@@ -1,5 +1,5 @@
 /*
-    ChibiOS - Copyright (C) 2006..2015 Giovanni Di Sirio.
+    ChibiOS - Copyright (C) 2006..2016 Giovanni Di Sirio.
 
     This file is part of ChibiOS.
 
@@ -25,14 +25,26 @@
  * @{
  */
 
-#ifndef _CHHEAP_H_
-#define _CHHEAP_H_
+#ifndef CHHEAP_H
+#define CHHEAP_H
 
 #if (CH_CFG_USE_HEAP == TRUE) || defined(__DOXYGEN__)
 
 /*===========================================================================*/
 /* Module constants.                                                         */
 /*===========================================================================*/
+
+/**
+ * @brief   Minimum alignment used for heap.
+ * @note    Cannot use the sizeof operator in this macro.
+ */
+#if (SIZEOF_PTR == 4) || defined(__DOXYGEN__)
+#define CH_HEAP_ALIGNMENT   8U
+#elif (SIZEOF_PTR == 2)
+#define CH_HEAP_ALIGNMENT   4U
+#else
+#error "unsupported pointer size"
+#endif
 
 /*===========================================================================*/
 /* Module pre-compile time settings.                                         */
@@ -60,36 +72,49 @@
 typedef struct memory_heap memory_heap_t;
 
 /**
+ * @brief   Type of a memory heap header.
+ */
+typedef union heap_header heap_header_t;
+
+/**
  * @brief   Memory heap block header.
  */
 union heap_header {
   stkalign_t align;
   struct {
-    union {
-      union heap_header *next;      /**< @brief Next block in free list.    */
-      memory_heap_t     *heap;      /**< @brief Block owner heap.           */
-    } u;                            /**< @brief Overlapped fields.          */
-    size_t              size;       /**< @brief Size of the memory block.   */
-  } h;
+    heap_header_t       *next;      /**< @brief Next block in free list.    */
+    size_t              pages;      /**< @brief Size of the area in pages.  */
+  } free;
+  struct {
+    memory_heap_t       *heap;      /**< @brief Block owner heap.           */
+    size_t              size;       /**< @brief Size of the area in bytes.  */
+  } used;
 };
 
 /**
  * @brief   Structure describing a memory heap.
  */
 struct memory_heap {
-  memgetfunc_t          h_provider; /**< @brief Memory blocks provider for
+  memgetfunc_t          provider;   /**< @brief Memory blocks provider for
                                                 this heap.                  */
-  union heap_header     h_free;     /**< @brief Free blocks list header.    */
+  heap_header_t         header;     /**< @brief Free blocks list header.    */
 #if CH_CFG_USE_MUTEXES == TRUE
-  mutex_t               h_mtx;      /**< @brief Heap access mutex.          */
+  mutex_t               mtx;        /**< @brief Heap access mutex.          */
 #else
-  semaphore_t           h_sem;      /**< @brief Heap access semaphore.      */
+  semaphore_t           sem;        /**< @brief Heap access semaphore.      */
 #endif
 };
 
 /*===========================================================================*/
 /* Module macros.                                                            */
 /*===========================================================================*/
+
+/**
+ * @brief   Allocation of an aligned static heap buffer.
+ */
+#define CH_HEAP_AREA(name, size)                                            \
+  ALIGNED_VAR(CH_HEAP_ALIGNMENT)                                            \
+  uint8_t name[MEM_ALIGN_NEXT((size), CH_HEAP_ALIGNMENT)]
 
 /*===========================================================================*/
 /* External declarations.                                                    */
@@ -100,9 +125,9 @@ extern "C" {
 #endif
   void _heap_init(void);
   void chHeapObjectInit(memory_heap_t *heapp, void *buf, size_t size);
-  void *chHeapAlloc(memory_heap_t *heapp, size_t size);
+  void *chHeapAllocAligned(memory_heap_t *heapp, size_t size, unsigned align);
   void chHeapFree(void *p);
-  size_t chHeapStatus(memory_heap_t *heapp, size_t *sizep);
+  size_t chHeapStatus(memory_heap_t *heapp, size_t *totalp, size_t *largestp);
 #ifdef __cplusplus
 }
 #endif
@@ -111,8 +136,43 @@ extern "C" {
 /* Module inline functions.                                                  */
 /*===========================================================================*/
 
+/**
+ * @brief   Allocates a block of memory from the heap by using the first-fit
+ *          algorithm.
+ * @details The allocated block is guaranteed to be properly aligned for a
+ *          pointer data type.
+ *
+ * @param[in] heapp     pointer to a heap descriptor or @p NULL in order to
+ *                      access the default heap.
+ * @param[in] size      the size of the block to be allocated. Note that the
+ *                      allocated block may be a bit bigger than the requested
+ *                      size for alignment and fragmentation reasons.
+ * @return              A pointer to the allocated block.
+ * @retval NULL         if the block cannot be allocated.
+ *
+ * @api
+ */
+static inline void *chHeapAlloc(memory_heap_t *heapp, size_t size) {
+
+  return chHeapAllocAligned(heapp, size, CH_HEAP_ALIGNMENT);
+}
+
+/**
+ * @brief   Returns the size of an allocated block.
+ * @note    The returned value is the requested size, the real size is the
+ *          same value aligned to the next @p CH_HEAP_ALIGNMENT multiple.
+ *
+ * @param[in] p         pointer to the memory block
+ *
+ * @api
+ */
+static inline size_t chHeapGetSize(const void *p) {
+
+  return ((heap_header_t *)p)->used.size;
+}
+
 #endif /* CH_CFG_USE_HEAP == TRUE */
 
-#endif /* _CHHEAP_H_ */
+#endif /* CHHEAP_H */
 
 /** @} */

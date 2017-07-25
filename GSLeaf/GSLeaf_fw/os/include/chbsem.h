@@ -1,5 +1,5 @@
 /*
-    ChibiOS - Copyright (C) 2006..2015 Giovanni Di Sirio.
+    ChibiOS - Copyright (C) 2006..2016 Giovanni Di Sirio.
 
     This file is part of ChibiOS.
 
@@ -46,8 +46,8 @@
  * @{
  */
 
-#ifndef _CHBSEM_H_
-#define _CHBSEM_H_
+#ifndef CHBSEM_H
+#define CHBSEM_H
 
 #if (CH_CFG_USE_SEMAPHORES == TRUE) || defined(__DOXYGEN__)
 
@@ -73,7 +73,7 @@
  * @brief   Binary semaphore type.
  */
 typedef struct {
-  semaphore_t           bs_sem;
+  semaphore_t           sem;
 } binary_semaphore_t;
 
 /*===========================================================================*/
@@ -89,7 +89,7 @@ typedef struct {
  * @param[in] taken     the semaphore initial state
  */
 #define _BSEMAPHORE_DATA(name, taken)                                       \
-  {_SEMAPHORE_DATA(name.bs_sem, ((taken) ? 0 : 1))}
+  {_SEMAPHORE_DATA(name.sem, ((taken) ? 0 : 1))}
 
 /**
  * @brief   Static semaphore initializer.
@@ -123,7 +123,7 @@ typedef struct {
  */
 static inline void chBSemObjectInit(binary_semaphore_t *bsp, bool taken) {
 
-  chSemObjectInit(&bsp->bs_sem, taken ? (cnt_t)0 : (cnt_t)1);
+  chSemObjectInit(&bsp->sem, taken ? (cnt_t)0 : (cnt_t)1);
 }
 
 /**
@@ -140,7 +140,7 @@ static inline void chBSemObjectInit(binary_semaphore_t *bsp, bool taken) {
  */
 static inline msg_t chBSemWait(binary_semaphore_t *bsp) {
 
-  return chSemWait(&bsp->bs_sem);
+  return chSemWait(&bsp->sem);
 }
 
 /**
@@ -159,7 +159,7 @@ static inline msg_t chBSemWaitS(binary_semaphore_t *bsp) {
 
   chDbgCheckClassS();
 
-  return chSemWaitS(&bsp->bs_sem);
+  return chSemWaitS(&bsp->sem);
 }
 
 /**
@@ -186,7 +186,7 @@ static inline msg_t chBSemWaitTimeoutS(binary_semaphore_t *bsp,
 
   chDbgCheckClassS();
 
-  return chSemWaitTimeoutS(&bsp->bs_sem, time);
+  return chSemWaitTimeoutS(&bsp->sem, time);
 }
 
 /**
@@ -211,7 +211,7 @@ static inline msg_t chBSemWaitTimeoutS(binary_semaphore_t *bsp,
 static inline msg_t chBSemWaitTimeout(binary_semaphore_t *bsp,
                                       systime_t time) {
 
-  return chSemWaitTimeout(&bsp->bs_sem, time);
+  return chSemWaitTimeout(&bsp->sem, time);
 }
 
 /**
@@ -233,7 +233,7 @@ static inline void chBSemResetI(binary_semaphore_t *bsp, bool taken) {
 
   chDbgCheckClassI();
 
-  chSemResetI(&bsp->bs_sem, taken ? (cnt_t)0 : (cnt_t)1);
+  chSemResetI(&bsp->sem, taken ? (cnt_t)0 : (cnt_t)1);
 }
 
 /**
@@ -252,7 +252,7 @@ static inline void chBSemResetI(binary_semaphore_t *bsp, bool taken) {
  */
 static inline void chBSemReset(binary_semaphore_t *bsp, bool taken) {
 
-  chSemReset(&bsp->bs_sem, taken ? (cnt_t)0 : (cnt_t)1);
+  chSemReset(&bsp->sem, taken ? (cnt_t)0 : (cnt_t)1);
 }
 
 /**
@@ -267,8 +267,8 @@ static inline void chBSemSignalI(binary_semaphore_t *bsp) {
 
   chDbgCheckClassI();
 
-  if (bsp->bs_sem.s_cnt < (cnt_t)1) {
-    chSemSignalI(&bsp->bs_sem);
+  if (bsp->sem.cnt < (cnt_t)1) {
+    chSemSignalI(&bsp->sem);
   }
 }
 
@@ -301,11 +301,11 @@ static inline bool chBSemGetStateI(binary_semaphore_t *bsp) {
 
   chDbgCheckClassI();
 
-  return (bsp->bs_sem.s_cnt > (cnt_t)0) ? false : true;
+  return (bsp->sem.cnt > (cnt_t)0) ? false : true;
 }
 
 #endif /* CH_CFG_USE_SEMAPHORES == TRUE */
 
-#endif /* _CHBSEM_H_ */
+#endif /* CHBSEM_H */
 
 /** @} */

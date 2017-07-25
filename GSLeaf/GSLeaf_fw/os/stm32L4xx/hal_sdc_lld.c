@@ -1,5 +1,5 @@
 /*
-    ChibiOS - Copyright (C) 2006..2015 Giovanni Di Sirio
+    ChibiOS - Copyright (C) 2006..2016 Giovanni Di Sirio
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
 */
 
 /**
- * @file    STM32/SDMMCv1/sdc_lld.c
+ * @file    SDMMCv1/hal_sdc_lld.c
  * @brief   STM32 SDC subsystem low level driver source.
  *
  * @addtogroup SDC
@@ -28,10 +28,10 @@
 
 #if HAL_USE_SDC || defined(__DOXYGEN__)
 
-// @KL
-//#if !defined(STM32_SDMMCCLK)
+#if !defined(STM32_SDMMCCLK)
+#define STM32_SDMMCCLK  48000000
 //#error "STM32_SDMMCCLK not defined"
-//#endif
+#endif
 
 #if STM32_SDMMCCLK > 48000000
 #error "STM32_SDMMCCLK exceeding 48MHz"
@@ -58,22 +58,33 @@
 #define SDMMC_CLKDIV_LS         (120 - 2)
 
 #define SDMMC_WRITE_TIMEOUT                                                 \
-  (((48000000 / (SDMMC_CLKDIV_HS + 2)) / 1000) *                      \
+  (((STM32_SDMMCCLK / (SDMMC_CLKDIV_HS + 2)) / 1000) *                      \
    STM32_SDC_SDMMC_WRITE_TIMEOUT)
 #define SDMMC_READ_TIMEOUT                                                  \
-  (((48000000 / (SDMMC_CLKDIV_HS + 2)) / 1000) *                      \
+  (((STM32_SDMMCCLK / (SDMMC_CLKDIV_HS + 2)) / 1000) *                      \
    STM32_SDC_SDMMC_READ_TIMEOUT)
 
-#define DMA_CHANNEL                                                         \
+#define SDMMC1_DMA_CHANNEL                                                  \
   STM32_DMA_GETCHANNEL(STM32_SDC_SDMMC1_DMA_STREAM,                         \
                        STM32_SDC_SDMMC1_DMA_CHN)
+
+#define SDMMC2_DMA_CHANNEL                                                  \
+  STM32_DMA_GETCHANNEL(STM32_SDC_SDMMC2_DMA_STREAM,                         \
+                       STM32_SDC_SDMMC2_DMA_CHN)
 
 /*===========================================================================*/
 /* Driver exported variables.                                                */
 /*===========================================================================*/
 
 /** @brief SDCD1 driver identifier.*/
+#if STM32_SDC_USE_SDMMC1 || defined(__DOXYGEN__)
 SDCDriver SDCD1;
+#endif
+
+/** @brief SDCD2 driver identifier.*/
+#if STM32_SDC_USE_SDMMC2 || defined(__DOXYGEN__)
+SDCDriver SDCD2;
+#endif
 
 /*===========================================================================*/
 /* Driver local variables and types.                                         */
@@ -320,17 +331,14 @@ static void sdc_lld_error_cleanup(SDCDriver *sdcp,
 /* Driver interrupt handlers.                                                */
 /*===========================================================================*/
 
-#if !defined(STM32_SDMMC1_HANDLER)
-#error "STM32_SDMMC1_HANDLER not defined"
-#endif
-
 /**
- * @brief   SDIO IRQ handler.
- * @details It just wakes transaction thread. All error  handling performs in
- *          that thread.
+ * @brief   SDMMC1 IRQ handler.
+ * @details It just wakes transaction thread, errors handling is performed in
+ *          there.
  *
  * @isr
  */
+#if STM32_SDC_USE_SDMMC1 || defined(__DOXYGEN__)
 OSAL_IRQ_HANDLER(STM32_SDMMC1_HANDLER) {
 
   OSAL_IRQ_PROLOGUE();
@@ -347,6 +355,33 @@ OSAL_IRQ_HANDLER(STM32_SDMMC1_HANDLER) {
 
   OSAL_IRQ_EPILOGUE();
 }
+#endif
+
+/**
+ * @brief   SDMMC2 IRQ handler.
+ * @details It just wakes transaction thread, errors handling is performed in
+ *          there.
+ *
+ * @isr
+ */
+#if STM32_SDC_USE_SDMMC2 || defined(__DOXYGEN__)
+OSAL_IRQ_HANDLER(STM32_SDMMC2_HANDLER) {
+
+  OSAL_IRQ_PROLOGUE();
+
+  osalSysLockFromISR();
+
+  /* Disables the source but the status flags are not reset because the
+     read/write functions needs to check them.*/
+  SDMMC2->MASK = 0;
+
+  osalThreadResumeI(&SDCD2.thread, MSG_OK);
+
+  osalSysUnlockFromISR();
+
+  OSAL_IRQ_EPILOGUE();
+}
+#endif
 
 /*===========================================================================*/
 /* Driver exported functions.                                                */
@@ -359,10 +394,21 @@ OSAL_IRQ_HANDLER(STM32_SDMMC1_HANDLER) {
  */
 void sdc_lld_init(void) {
 
+#if STM32_SDC_USE_SDMMC1
   sdcObjectInit(&SDCD1);
   SDCD1.thread = NULL;
   SDCD1.dma    = STM32_DMA_STREAM(STM32_SDC_SDMMC1_DMA_STREAM);
   SDCD1.sdmmc  = SDMMC1;
+  nvicEnableVector(STM32_SDMMC1_NUMBER, STM32_SDC_SDMMC1_IRQ_PRIORITY);
+#endif
+
+#if STM32_SDC_USE_SDMMC2
+  sdcObjectInit(&SDCD2);
+  SDCD2.thread = NULL;
+  SDCD2.dma    = STM32_DMA_STREAM(STM32_SDC_SDMMC2_DMA_STREAM);
+  SDCD2.sdmmc  = SDMMC2;
+  nvicEnableVector(STM32_SDMMC2_NUMBER, STM32_SDC_SDMMC2_IRQ_PRIORITY);
+#endif
 }
 
 /**
@@ -379,7 +425,7 @@ void sdc_lld_start(SDCDriver *sdcp) {
     sdcp->config = &sdc_default_cfg;
   }
 
-  sdcp->dmamode = STM32_DMA_CR_CHSEL(DMA_CHANNEL) |
+  sdcp->dmamode = STM32_DMA_CR_CHSEL(SDMMC1_DMA_CHANNEL) |
                   STM32_DMA_CR_PL(STM32_SDC_SDMMC1_DMA_PRIORITY) |
                   STM32_DMA_CR_PSIZE_WORD |
                   STM32_DMA_CR_MSIZE_WORD |
@@ -391,17 +437,39 @@ void sdc_lld_start(SDCDriver *sdcp) {
                    STM32_DMA_CR_MBURST_INCR4;
 #endif
 
+  /* If in stopped state then clocks are enabled and DMA initialized.*/
   if (sdcp->state == BLK_STOP) {
-    /* Note, the DMA must be enabled before the IRQs.*/
-    bool b;
-    b = dmaStreamAllocate(sdcp->dma, STM32_SDC_SDMMC1_IRQ_PRIORITY, NULL, NULL);
-    osalDbgAssert(!b, "stream already allocated");
-    dmaStreamSetPeripheral(sdcp->dma, &sdcp->sdmmc->FIFO);
+#if STM32_SDC_USE_SDMMC1
+    if (&SDCD1 == sdcp) {
+      bool b = dmaStreamAllocate(sdcp->dma, STM32_SDC_SDMMC1_IRQ_PRIORITY,
+                                 NULL, NULL);
+
+      osalDbgAssert(!b, "stream already allocated");
+
+      dmaStreamSetPeripheral(sdcp->dma, &sdcp->sdmmc->FIFO);
 #if STM32_DMA_ADVANCED
-    dmaStreamSetFIFO(sdcp->dma, STM32_DMA_FCR_DMDIS | STM32_DMA_FCR_FTH_FULL);
+      dmaStreamSetFIFO(sdcp->dma, STM32_DMA_FCR_DMDIS |
+                                  STM32_DMA_FCR_FTH_FULL);
 #endif
-    nvicEnableVector(STM32_SDMMC1_NUMBER, STM32_SDC_SDMMC1_IRQ_PRIORITY);
-    rccEnableSDMMC1(FALSE);
+      rccEnableSDMMC1(FALSE);
+    }
+#endif /* STM32_SDC_USE_SDMMC1 */
+
+#if STM32_SDC_USE_SDMMC2
+    if (&SDCD2 == sdcp) {
+      bool b = dmaStreamAllocate(sdcp->dma, STM32_SDC_SDMMC2_IRQ_PRIORITY,
+                                 NULL, NULL);
+
+      osalDbgAssert(!b, "stream already allocated");
+
+      dmaStreamSetPeripheral(sdcp->dma, &sdcp->sdmmc->FIFO);
+#if STM32_DMA_ADVANCED
+      dmaStreamSetFIFO(sdcp->dma, STM32_DMA_FCR_DMDIS |
+                                  STM32_DMA_FCR_FTH_FULL);
+#endif
+      rccEnableSDMMC2(FALSE);
+    }
+#endif /* STM32_SDC_USE_SDMMC2 */
   }
 
   /* Configuration, card clock is initially stopped.*/
@@ -428,10 +496,21 @@ void sdc_lld_stop(SDCDriver *sdcp) {
     sdcp->sdmmc->DCTRL  = 0;
     sdcp->sdmmc->DTIMER = 0;
 
-    /* Clock deactivation.*/
-    nvicDisableVector(STM32_SDMMC1_NUMBER);
+    /* DMA stream released.*/
     dmaStreamRelease(sdcp->dma);
-    rccDisableSDMMC1(FALSE);
+
+    /* Clock deactivation.*/
+#if STM32_SDC_USE_SDMMC1
+    if (&SDCD1 == sdcp) {
+      rccDisableSDMMC1(FALSE);
+    }
+#endif
+
+#if STM32_SDC_USE_SDMMC2
+    if (&SDCD2 == sdcp) {
+      rccDisableSDMMC2(FALSE);
+    }
+#endif
   }
 }
 
@@ -465,14 +544,30 @@ void sdc_lld_set_data_clk(SDCDriver *sdcp, sdcbusclk_t clk) {
 #if 0
   if (SDC_CLK_50MHz == clk) {
     sdcp->sdmmc->CLKCR = (sdcp->sdmmc->CLKCR & 0xFFFFFF00U) |
+#if STM32_SDC_SDMMC_PWRSAV
+                         SDMMC_CLKDIV_HS | SDMMC_CLKCR_BYPASS |
+                         SDMMC_CLKCR_PWRSAV;
+#else
                          SDMMC_CLKDIV_HS | SDMMC_CLKCR_BYPASS;
+#endif
   }
-  else
+  else {
+#if STM32_SDC_SDMMC_PWRSAV
+    sdcp->sdmmc->CLKCR = (sdcp->sdmmc->CLKCR & 0xFFFFFF00U) | SDMMC_CLKDIV_HS |
+                         SDMMC_CLKCR_PWRSAV;
+#else
     sdcp->sdmmc->CLKCR = (sdcp->sdmmc->CLKCR & 0xFFFFFF00U) | SDMMC_CLKDIV_HS;
+#endif
+  }
 #else
   (void)clk;
 
+#if STM32_SDC_SDMMC_PWRSAV
+  sdcp->sdmmc->CLKCR = (sdcp->sdmmc->CLKCR & 0xFFFFFF00U) | SDMMC_CLKDIV_HS |
+                       SDMMC_CLKCR_PWRSAV;
+#else
   sdcp->sdmmc->CLKCR = (sdcp->sdmmc->CLKCR & 0xFFFFFF00U) | SDMMC_CLKDIV_HS;
+#endif
 #endif
 }
 
@@ -490,7 +585,7 @@ void sdc_lld_stop_clk(SDCDriver *sdcp) {
 }
 
 /**
- * @brief   Switches the bus to 4 bits mode.
+ * @brief   Switches the bus to 1, 4 or 8 bits mode.
  *
  * @param[in] sdcp      pointer to the @p SDCDriver object
  * @param[in] mode      bus mode
@@ -523,6 +618,7 @@ void sdc_lld_set_bus_mode(SDCDriver *sdcp, sdcbusmode_t mode) {
  * @notapi
  */
 void sdc_lld_send_cmd_none(SDCDriver *sdcp, uint8_t cmd, uint32_t arg) {
+
   sdcp->sdmmc->ARG = arg;
   sdcp->sdmmc->CMD = (uint32_t)cmd | SDMMC_CMD_CPSMEN;
   while ((sdcp->sdmmc->STA & SDMMC_STA_CMDSENT) == 0)
@@ -656,7 +752,7 @@ bool sdc_lld_read_special(SDCDriver *sdcp, uint8_t *buf, size_t bytes,
                           uint8_t cmd, uint32_t arg) {
   uint32_t resp[1];
 
-  if(sdc_lld_prepare_read_bytes(sdcp, buf, bytes))
+  if (sdc_lld_prepare_read_bytes(sdcp, buf, bytes))
     goto error;
 
   if (sdc_lld_send_cmd_short_crc(sdcp, cmd, arg, resp)
@@ -824,7 +920,9 @@ bool sdc_lld_read(SDCDriver *sdcp, uint32_t startblk,
     }
     return HAL_SUCCESS;
   }
-#endif /* STM32_SDC_SDMMC_UNALIGNED_SUPPORT */
+#else /* !STM32_SDC_SDIO_UNALIGNED_SUPPORT */
+  osalDbgAssert((((unsigned)buf & 3) == 0), "unaligned buffer");
+#endif /* !STM32_SDC_SDIO_UNALIGNED_SUPPORT */
   return sdc_lld_read_aligned(sdcp, startblk, buf, blocks);
 }
 
@@ -857,7 +955,9 @@ bool sdc_lld_write(SDCDriver *sdcp, uint32_t startblk,
     }
     return HAL_SUCCESS;
   }
-#endif /* STM32_SDC_SDMMC_UNALIGNED_SUPPORT */
+#else /* !STM32_SDC_SDIO_UNALIGNED_SUPPORT */
+  osalDbgAssert((((unsigned)buf & 3) == 0), "unaligned buffer");
+#endif /* !STM32_SDC_SDIO_UNALIGNED_SUPPORT */
   return sdc_lld_write_aligned(sdcp, startblk, buf, blocks);
 }
 

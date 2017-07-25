@@ -10,8 +10,8 @@
 #include <inttypes.h>
 
 // ==== General ====
-#define BOARD_NAME          "GSLeaf01"
-#define APP_NAME            "GSLeaf"
+#define BOARD_NAME          "GSLeaf02"
+#define APP_NAME            "GSLeaf2"
 
 // MCU type as defined in the ST header.
 #define STM32L476xx

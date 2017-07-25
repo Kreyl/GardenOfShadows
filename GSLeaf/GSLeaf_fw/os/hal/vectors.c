@@ -1,5 +1,5 @@
 /*
-    ChibiOS - Copyright (C) 2006..2015 Giovanni Di Sirio
+    ChibiOS - Copyright (C) 2006..2016 Giovanni Di Sirio
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -43,6 +43,7 @@
  * @notapi
  */
 /*lint -save -e9075 [8.4] All symbols are invoked from asm context.*/
+__attribute__((weak))
 void _unhandled_exception(void) {
 /*lint -restore*/
 

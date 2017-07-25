@@ -1,5 +1,5 @@
 /*
-    ChibiOS - Copyright (C) 2006..2015 Giovanni Di Sirio.
+    ChibiOS - Copyright (C) 2006..2016 Giovanni Di Sirio.
 
     This file is part of ChibiOS.
 
@@ -25,8 +25,8 @@
  * @{
  */
 
-#ifndef _CHMBOXES_H_
-#define _CHMBOXES_H_
+#ifndef CHMBOXES_H
+#define CHMBOXES_H
 
 #if (CH_CFG_USE_MAILBOXES == TRUE) || defined(__DOXYGEN__)
 
@@ -50,16 +50,16 @@
  * @brief   Structure representing a mailbox object.
  */
 typedef struct {
-  msg_t                 *mb_buffer;     /**< @brief Pointer to the mailbox
+  msg_t                 *buffer;        /**< @brief Pointer to the mailbox
                                                     buffer.                 */
-  msg_t                 *mb_top;        /**< @brief Pointer to the location
+  msg_t                 *top;           /**< @brief Pointer to the location
                                                     after the buffer.       */
-  msg_t                 *mb_wrptr;      /**< @brief Write pointer.          */
-  msg_t                 *mb_rdptr;      /**< @brief Read pointer.           */
-  cnt_t                 mb_cnt;         /**< @brief Messages in queue.      */
-  bool                  mb_reset;       /**< @brief True in reset state.    */
-  threads_queue_t       mb_qw;          /**< @brief Queued writers.         */
-  threads_queue_t       mb_qr;          /**< @brief Queued readers.         */
+  msg_t                 *wrptr;         /**< @brief Write pointer.          */
+  msg_t                 *rdptr;         /**< @brief Read pointer.           */
+  cnt_t                 cnt;            /**< @brief Messages in queue.      */
+  bool                  reset;          /**< @brief True in reset state.    */
+  threads_queue_t       qw;             /**< @brief Queued writers.         */
+  threads_queue_t       qr;             /**< @brief Queued readers.         */
 } mailbox_t;
 
 /*===========================================================================*/
@@ -82,8 +82,8 @@ typedef struct {
   (msg_t *)(buffer),                                                        \
   (cnt_t)0,                                                                 \
   false,                                                                    \
-  _THREADS_QUEUE_DATA(name.mb_qw),                                          \
-  _THREADS_QUEUE_DATA(name.mb_qr),                                          \
+  _THREADS_QUEUE_DATA(name.qw),                                             \
+  _THREADS_QUEUE_DATA(name.qr),                                             \
 }
 
 /**
@@ -133,11 +133,11 @@ extern "C" {
  *
  * @iclass
  */
-static inline cnt_t chMBGetSizeI(mailbox_t *mbp) {
+static inline cnt_t chMBGetSizeI(const mailbox_t *mbp) {
 
   /*lint -save -e9033 [10.8] Perfectly safe pointers
     arithmetic.*/
-  return (cnt_t)(mbp->mb_top - mbp->mb_buffer);
+  return (cnt_t)(mbp->top - mbp->buffer);
   /*lint -restore*/
 }
 
@@ -150,11 +150,11 @@ static inline cnt_t chMBGetSizeI(mailbox_t *mbp) {
  *
  * @iclass
  */
-static inline cnt_t chMBGetUsedCountI(mailbox_t *mbp) {
+static inline cnt_t chMBGetUsedCountI(const mailbox_t *mbp) {
 
   chDbgCheckClassI();
 
-  return mbp->mb_cnt;
+  return mbp->cnt;
 }
 
 /**
@@ -165,7 +165,7 @@ static inline cnt_t chMBGetUsedCountI(mailbox_t *mbp) {
  *
  * @iclass
  */
-static inline cnt_t chMBGetFreeCountI(mailbox_t *mbp) {
+static inline cnt_t chMBGetFreeCountI(const mailbox_t *mbp) {
 
   chDbgCheckClassI();
 
@@ -184,11 +184,11 @@ static inline cnt_t chMBGetFreeCountI(mailbox_t *mbp) {
  *
  * @iclass
  */
-static inline msg_t chMBPeekI(mailbox_t *mbp) {
+static inline msg_t chMBPeekI(const mailbox_t *mbp) {
 
   chDbgCheckClassI();
 
-  return *mbp->mb_rdptr;
+  return *mbp->rdptr;
 }
 
 /**
@@ -200,11 +200,11 @@ static inline msg_t chMBPeekI(mailbox_t *mbp) {
  */
 static inline void chMBResumeX(mailbox_t *mbp) {
 
-  mbp->mb_reset = false;
+  mbp->reset = false;
 }
 
 #endif /* CH_CFG_USE_MAILBOXES == TRUE */
 
-#endif /* _CHMBOXES_H_ */
+#endif /* CHMBOXES_H */
 
 /** @} */

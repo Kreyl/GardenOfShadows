@@ -6,8 +6,8 @@
  */
 
 #include "kl_sd.h"
-#include "sdc.h"
-#include "sdc_lld.h"
+#include "hal_sdc.h"
+#include "hal_sdc_lld.h"
 #include <string.h>
 #include <stdlib.h>
 #include "kl_lib.h"
