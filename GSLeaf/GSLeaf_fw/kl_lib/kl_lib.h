@@ -306,6 +306,10 @@ static inline bool TimeElapsed(systime_t *PSince, uint32_t Delay_ms) {
     chSysUnlock();
     return Rslt;
 }
+
+static inline void Loop(uint32_t N) {
+    for(volatile uint32_t i=0; i<N; i++);
+}
 #endif
 
 #if 1 // ========================== Simple delay ===============================
@@ -1134,6 +1138,7 @@ public:
     void WaitBsyHi2Lo()  const { while(PSpi->SR & SPI_SR_BSY); }
     void WaitTxEHi()     const { while(!(PSpi->SR & SPI_SR_TXE)); }
     void ClearRxBuf()    const { while(PSpi->SR & SPI_SR_RXNE) (void)PSpi->DR; }
+    void ClearOVR()      const { (void)PSpi->DR; (void)PSpi->SR; (void)PSpi->DR; }
     uint8_t ReadWriteByte(uint8_t AByte) const {
         *((volatile uint8_t*)&PSpi->DR) = AByte;
         while(!(PSpi->SR & SPI_SR_RXNE));  // Wait for SPI transmission to complete

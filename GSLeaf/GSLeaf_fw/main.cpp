@@ -17,6 +17,7 @@
 #include "acc_mma8452.h"
 #include "kl_fs_utils.h"
 #include "SimpleSensors.h"
+#include "pn.h"
 
 // Forever
 EvtMsgQ_t<EvtMsg_t, MAIN_EVT_Q_LEN> EvtQMain;
@@ -54,7 +55,8 @@ int main(void) {
 
 //    Clk.Select48MhzSrc(src48PllQ);
 
-//    Led.Init();
+    Led.Init();
+    Pn.Init();
 
 //    PwrEn.Init();
 //    PwrEn.SetLo();

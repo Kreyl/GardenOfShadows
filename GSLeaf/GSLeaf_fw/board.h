@@ -77,6 +77,14 @@
 #define ACC_IRQ_GPIO    GPIOB
 #define ACC_IRQ_PIN     2
 
+// PN
+#define PN_IRQ_PIN      GPIOC, 1, pudNone
+#define PN_NSS_PIN      GPIOB, 12
+#define PN_SCK_PIN      GPIOB, 13, omPushPull, pudNone, AF5
+#define PN_MISO_PIN     GPIOB, 14, omPushPull, pudNone, AF5
+#define PN_MOSI_PIN     GPIOB, 15, omPushPull, pudNone, AF5
+#define PN_RST_PIN      GPIOC, 2
+
 // I2C
 #define I2C1_GPIO       GPIOB
 #define I2C1_SCL        6
@@ -108,6 +116,8 @@
 #if 1 // =========================== SPI =======================================
 #define CC_SPI          SPI1
 #define CC_SPI_AF       AF5
+
+#define PN_SPI          SPI2
 #endif
 
 #if 1 // ========================== USART ======================================
@@ -139,9 +149,14 @@
 #if 1 // =========================== DMA =======================================
 // ==== Uart ====
 // Remap is made automatically if required
-#define UART_DMA_TX     STM32_DMA1_STREAM4
-#define UART_DMA_RX     STM32_DMA1_STREAM5
+#define UART_DMA_TX     STM32_DMA2_STREAM6
+#define UART_DMA_RX     STM32_DMA2_STREAM7
 #define UART_DMA_CHNL   2
+
+// ==== PN ====
+#define PN_DMA_TX       STM32_DMA1_STREAM5
+#define PN_DMA_RX       STM32_DMA1_STREAM4
+#define PN_DMA_CHNL     1
 
 // ==== I2C ====
 #define I2C1_DMA_TX     STM32_DMA2_STREAM7

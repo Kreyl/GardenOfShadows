@@ -19,4 +19,7 @@ enum EvtMsgId_t {
     evtIdPlayEnd = 17,
     evtIdPauseEnds = 18,
     evtIdOnRx = 19,
+
+    evtIdCardAppeared = 30,
+    evtIdCardDisappeared = 31,
 };
