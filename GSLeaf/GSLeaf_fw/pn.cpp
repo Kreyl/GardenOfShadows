@@ -19,7 +19,7 @@
 #endif
 
 //#define PRINT_IO
-#define PRINT_DATA
+//#define PRINT_DATA
 //#define PRINT_TAGS
 
 // SPI clock is up to 5MHz (um p.45)
@@ -96,11 +96,11 @@ void PN532_t::Init() {
     ISpi.Enable();
     // ==== DMA ====
     // Tx
-    dmaStreamAllocate(PN_DMA_TX, IRQ_PRIO_MEDIUM, PnDmaTxCompIrq, NULL);
+    dmaStreamAllocate(PN_DMA_TX, IRQ_PRIO_MEDIUM, PnDmaTxCompIrq, nullptr);
     dmaStreamSetPeripheral(PN_DMA_TX, &PN_SPI->DR);
     dmaStreamSetMode      (PN_DMA_TX, PN_DMA_TX_MODE);
     // Rx
-    dmaStreamAllocate(PN_DMA_RX, IRQ_PRIO_MEDIUM, PnDmaRxCompIrq, NULL);
+    dmaStreamAllocate(PN_DMA_RX, IRQ_PRIO_MEDIUM, PnDmaRxCompIrq, nullptr);
     dmaStreamSetPeripheral(PN_DMA_RX, &PN_SPI->DR);
     dmaStreamSetMode      (PN_DMA_RX, PN_DMA_RX_MODE);
     // ==== IRQ ====
@@ -127,7 +127,7 @@ void PN532_t::ITask() {
                     if(CardAppeared()) {
                         if(MifareRead(0) == retvOk) {
                             CardOk = true;
-//                            Printf("Card Appeared\r");
+                            Printf("Card Appeared\r");
                             CardID.ConstructOfBuf(PReply->Buf);
                             EvtMsg_t Msg(evtIdCardAppeared, &CardID);
                             EvtQMain.SendWaitingAbility(Msg, MS2ST(900));
@@ -136,7 +136,7 @@ void PN532_t::ITask() {
                 }
                 else {
                     if(!CardIsStillNear()) {
-//                        Printf("Card Lost\r");
+                        Printf("Card Lost\r");
                         CardOk = false;
                         EvtMsg_t Msg(evtIdCardDisappeared);
                         EvtQMain.SendWaitingAbility(Msg, MS2ST(900));
@@ -148,10 +148,18 @@ void PN532_t::ITask() {
                 IReset();
                 Cmd(PN_CMD_GET_FIRMWARE_VERSION, WITHOUT_DATA);  // First Cmd will be discarded
                 Cmd(PN_CMD_GET_FIRMWARE_VERSION, WITHOUT_DATA);
-                Cmd(PN_CMD_SAM_CONFIGURATION, 1, 0x01);          // Disable SAM to calm PN: Normal mode, the SAM is not used
-                Cmd(PN_CMD_RF_CONFIGURATION, 4, 0x05, 0x02, 0x01, 0x05);
-                Cmd(PN_CMD_RF_CONFIGURATION, 4, 0x02, 0x00, 0x0B, 0x10);
-                State = psConfigured;
+//                Printf("DS: %u\r", RxDataSz);
+                if(PReply->RplCode == 0x03 and PReply->Slot == 0x32) {
+                    Printf("Pn reply ok\r");
+                    Cmd(PN_CMD_SAM_CONFIGURATION, 1, 0x01);          // Disable SAM to calm PN: Normal mode, the SAM is not used
+                    Cmd(PN_CMD_RF_CONFIGURATION, 4, 0x05, 0x02, 0x01, 0x05);
+                    Cmd(PN_CMD_RF_CONFIGURATION, 4, 0x02, 0x00, 0x0B, 0x10);
+                    State = psConfigured;
+                }
+                else {
+                    Printf("Pn reply error\r");
+                    State = psOff;
+                }
                 break;
 
             case psOff:
@@ -206,13 +214,14 @@ uint8_t PN532_t::MifareRead(uint32_t AAddr) {
 uint8_t PN532_t::Cmd(uint8_t CmdID, uint32_t ADataLength, ...) {
     uint8_t Rslt = retvOk;
     uint32_t FLength;
+    // ==== Prepare message to send, always in extended format ====
     IBuf[0] = PN_PRE_DATA_WRITE;
     // Prologue
     PrologueExt->Preamble = 0x00;     // Always
     PrologueExt->SoP0     = 0x00;     // Always
     PrologueExt->SoP1     = 0xFF;     // Always
-    PrologueExt->NPLC     = 0xFF;     // Always
-    PrologueExt->NPL      = 0xFF;     // Always
+    PrologueExt->NPLC     = 0xFF;     // Always, extended format
+    PrologueExt->NPL      = 0xFF;     // Always, extended format
     // Length = 1 (TFI) + 1 (CMD == PD0) + ADataLength
     FLength = 1 + 1 + ADataLength;
     PrologueExt->LengthHi = (uint8_t)((FLength >> 8) & 0xFF);
@@ -231,33 +240,32 @@ uint8_t PN532_t::Cmd(uint8_t CmdID, uint32_t ADataLength, ...) {
     // Epilogue
     WriteEpilogue(FLength);
     // ==== Transmit frame ====
-#ifdef PRINT_IO
-    Printf("\r>> %A   ", IBuf, PN_TX_SZ(FLength), ' ');
-#endif
 #ifdef PRINT_DATA
     Printf(">> %A\r", &IBuf[PN_DATA_EXT_INDX], 2+ADataLength, ' ');
 #endif
     INssLo();
-    ITxRx(IBuf, nullptr, PN_TX_SZ(FLength));
+    ITxRx(nullptr, PN_TX_SZ(FLength));    // Transmit message
     INssHi();
     // ======= Receive =======
-    if((Rslt = ReceiveAck()) != retvOk) return Rslt;
-    return ReceiveData();
+    Rslt = ReceiveAck();
+    if(Rslt != retvOk) return Rslt;
+    else return ReceiveData();
 }
 
 uint8_t PN532_t::ReceiveAck() {
     uint8_t Rslt = retvOk;
     if((Rslt = WaitReplyReady(PN_ACK_TIMEOUT)) != retvOk) return Rslt;
-    IBuf[0] = PN_PRE_DATA_READ;
+//    Printf("PN Rpl rdy\r");
+    IBuf[0] = PN_PRE_DATA_READ;     // First byte is sequence "read"
     INssLo();
-    ITxRx(IBuf, IBuf, PN_ACK_NACK_SZ+1);    // First byte is sequence "read"
+    ITxRx(IBuf, PN_ACK_NACK_SZ+1); // Transmit read request and receive ACK/NACK
     INssHi();
     PnAckNack_t *PAckNack = (PnAckNack_t*)&IBuf[1]; // First byte is reply to sequence "read"
-    Rslt = (*PAckNack == PnPktAck)? retvOk : retvFail;
-#ifdef PRINT_IO
-    Printf("\r<< %A   ", PAckNack, PN_ACK_NACK_SZ, ' ');
-#endif
-    return Rslt;
+    if(*PAckNack == PnPktAck) return retvOk;
+    else {
+        Printf("PN Nack\r");
+        return retvFail;
+    }
 }
 
 uint8_t PN532_t::ReceiveData() {
@@ -265,10 +273,10 @@ uint8_t PN532_t::ReceiveData() {
     uint8_t* PRxData;
     PReply = nullptr;
     if((Rslt = WaitReplyReady(PN_DATA_TIMEOUT)) != retvOk) return Rslt;
-    IBuf[0] = PN_PRE_DATA_READ;
+    IBuf[0] = PN_PRE_DATA_READ; // First byte is sequence "read"
     INssLo();
     // Receive reply's prologue
-    ITxRx(IBuf, IBuf, PROLOGUE_SZ+1);    // First byte is sequence "read"
+    ITxRx(IBuf, PROLOGUE_SZ+1); // Transmit read request and receive prologue
     // Check if wrong beginning
     if(!Prologue->IsStartOk()) {
         Printf("Bad start\r");
@@ -277,7 +285,7 @@ uint8_t PN532_t::ReceiveData() {
     }
     // Check if extended frame
     if(Prologue->IsExtended()) {
-        ITxRx(IBuf, &PrologueExt->LengthHi, (PROLOGUE_EXT_SZ - PROLOGUE_SZ)); // Receive remainder of prologueExt
+        ITxRx(&PrologueExt->LengthHi, (PROLOGUE_EXT_SZ - PROLOGUE_SZ)); // Receive remainder of prologueExt
         // Check length crc
         if(!PrologueExt->IsLcsOk()) {
             Printf("Bad Ext LCS\r");
@@ -298,7 +306,7 @@ uint8_t PN532_t::ReceiveData() {
         PRxData = &IBuf[PN_DATA_NORMAL_INDX];
         RxDataSz = Prologue->Len;
     }
-    ITxRx(IBuf, PRxData, (RxDataSz + EPILOGUE_SZ));  // Receive data and epilogue
+    ITxRx(PRxData, (RxDataSz + EPILOGUE_SZ));  // Receive data and epilogue
     INssHi();
     // Check DCS
     uint8_t DCS = 0;
@@ -309,36 +317,44 @@ uint8_t PN532_t::ReceiveData() {
     }
     // All ok
     PReply = (PnReply_t*)PRxData;
-#ifdef PRINT_IO
-    uint32_t TotalLength = DataSz + (Prologue->IsExtended()? PROLOGUE_EXT_SZ : PROLOGUE_SZ) + EPILOGUE_SZ;
-    Printf("<< %A\r", Prologue, TotalLength, ' ');
-#endif
 #ifdef PRINT_DATA
     Printf("<< %A\r", PRxData, RxDataSz, ' ');
 #endif
     return retvOk;
 }
 
-void PN532_t::ITxRx(void *PTx, void *PRx, uint32_t ALength) {
-    ISpi.ClearOVR();
+// Transmit IBuf always
+void PN532_t::ITxRx(uint8_t *PRx, uint32_t ALength) {
+#ifdef PRINT_IO
+    Printf(">> %A\r", IBuf, ALength, ' ');
+#endif
+//    ISpi.ClearOVR();    // Clear OVERFLOW flag
+    ISpi.ClearRxBuf();
     chSysLock();
     // RX
-    if(PRx != nullptr) {
-        dmaStreamSetMemory0(PN_DMA_RX, PRx);
-        dmaStreamSetTransactionSize(PN_DMA_RX, ALength);
-        dmaStreamSetMode(PN_DMA_RX, PN_DMA_RX_MODE);
-        dmaStreamEnable(PN_DMA_RX);
-        ISpi.EnableRxDma();
-    }
+    if(PRx != nullptr) { dmaStreamSetMemory0(PN_DMA_RX, PRx); }
+    else { dmaStreamSetMemory0(PN_DMA_RX, IBuf); }
+    dmaStreamSetTransactionSize(PN_DMA_RX, ALength);
+    dmaStreamSetMode(PN_DMA_RX, PN_DMA_RX_MODE);
+    dmaStreamEnable(PN_DMA_RX);
+    ISpi.EnableRxDma();
     // TX
-    dmaStreamSetMemory0(PN_DMA_TX, PTx);
+    dmaStreamSetMemory0(PN_DMA_TX, IBuf);
     dmaStreamSetTransactionSize(PN_DMA_TX, ALength);
     dmaStreamSetMode(PN_DMA_TX, PN_DMA_TX_MODE);
     dmaStreamEnable(PN_DMA_TX);
     ISpi.EnableTxDma();
     chThdSuspendS(&ThdRef); // Wait IRQ
     chSysUnlock();
-    ISpi.WaitBsyHi2Lo();
+//    uint8_t *p = PRx;
+//    for(uint32_t i=0; i<ALength; i++) {
+//        uint8_t b = ISpi.ReadWriteByte(*PTx++);
+//        if(PRx != nullptr) *p++ = b;
+//    }
+//    ISpi.WaitBsyHi2Lo();
+#ifdef PRINT_IO
+    if(PRx != nullptr) Printf("<< %A\r", PRx, ALength, ' ');
+#endif
 }
 
 uint8_t PN532_t::WaitReplyReady(uint32_t Timeout_ms) {
@@ -367,10 +383,10 @@ extern "C" {
 // DMA transmission complete
 void PnDmaTxCompIrq(void *p, uint32_t flags) {
     dmaStreamDisable(PN_DMA_TX);    // Disable DMA
-    Pn.ISpi.DisableTxDma();         // Disable SPI DMA
-    chSysLockFromISR();
-    chThdResumeI(&ThdRef, MSG_OK);
-    chSysUnlockFromISR();
+//    Pn.ISpi.DisableTxDma();         // Disable SPI DMA
+//    chSysLockFromISR();
+//    chThdResumeI(&ThdRef, MSG_OK);
+//    chSysUnlockFromISR();
 }
 // DMA reception complete
 void PnDmaRxCompIrq(void *p, uint32_t flags) {

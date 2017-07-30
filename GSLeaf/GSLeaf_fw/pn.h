@@ -143,7 +143,7 @@ private:
     uint8_t Cmd(uint8_t CmdID, uint32_t ADataLength, ...);
     uint8_t ReceiveAck();
     uint8_t ReceiveData();
-    void ITxRx(void *PTx, void *PRx, uint32_t ALength);
+    void ITxRx(uint8_t *PRx, uint32_t ALength);
     uint8_t WaitReplyReady(uint32_t Timeout_ms);
     // ==== Hi lvl ====
     bool CardAppeared();
