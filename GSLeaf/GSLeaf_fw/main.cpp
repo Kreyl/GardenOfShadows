@@ -117,6 +117,7 @@ int main(void) {
     Audio.Init();   // i2c initialized inside, as pull-ups powered by VAA's LDO
     Audio.SetSpeakerVolume(-96);    // To remove speaker pop at power on
     Audio.DisableSpeakers();
+    Audio.SetHeadphoneVolume(-18);
     Audio.EnableHeadphones();
 
 //    Acc.Init();
@@ -125,7 +126,7 @@ int main(void) {
     IDTable.Load();
     Player.Init();
 
-//    SimpleSensors::Init();
+    SimpleSensors::Init();
 
     // Start playing surround music
     Player.PlayRandomFileFromDir(DIRNAME_SURROUND);
@@ -181,8 +182,8 @@ void ITask() {
 
             case evtIdButtons:
                 Printf("Btn %u\r", Msg.BtnEvtInfo.BtnID);
-                if(Msg.BtnEvtInfo.BtnID == 0) Audio.VolumeUp();
-                else Audio.VolumeDown();
+                if(Msg.BtnEvtInfo.BtnID == 1) Audio.VolumeUp();
+                else if(Msg.BtnEvtInfo.BtnID == 2) Audio.VolumeDown();
                 break;
 
             default: break;

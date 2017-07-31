@@ -36,7 +36,7 @@
 #define BTN_COMBO                   FALSE   // Allow combo
 #define BTN_GETSTATE_REQUIRED       FALSE
 
-#define BTN_REPEAT_PERIOD_MS        54
+#define BTN_REPEAT_PERIOD_MS        180
 #define BTN_LONGPRESS_DELAY_MS      999
 #define BTN_DELAY_BEFORE_REPEAT_MS  450
 

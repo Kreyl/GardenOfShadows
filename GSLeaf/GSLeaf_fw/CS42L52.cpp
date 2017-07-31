@@ -424,6 +424,7 @@ u8 CS42L52_t::SetMasterVolume(i8 Volume_dB) {
 // -96...0 dB
 u8 CS42L52_t::SetHeadphoneVolume(i8 Volume_dB) {
     if(Volume_dB < -96 or Volume_dB > 0) return retvBadValue;
+    IVolume = Volume_dB;
     Volume_dB *= 2; // 0.5dB step
     return WriteTwoTheSame(0x22, Volume_dB);
 }
