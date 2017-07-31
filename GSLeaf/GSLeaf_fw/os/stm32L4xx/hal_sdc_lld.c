@@ -54,7 +54,7 @@
    SDMMC_STA_CTIMEOUT | SDMMC_STA_DTIMEOUT |                                \
    SDMMC_STA_TXUNDERR | SDMMC_STA_RXOVERR)
 
-#define SDMMC_CLKDIV_HS         (2 - 2)
+#define SDMMC_CLKDIV_HS         (3 - 2)     // @KL: changed (2-2) to (3-2)
 #define SDMMC_CLKDIV_LS         (120 - 2)
 
 #define SDMMC_WRITE_TIMEOUT                                                 \
