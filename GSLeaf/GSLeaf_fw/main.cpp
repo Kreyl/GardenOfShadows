@@ -31,10 +31,49 @@ LedRGB_t Led { LED_RED_CH, LED_GREEN_CH, LED_BLUE_CH };
 CS42L52_t Audio;
 AuPlayer_t Player;
 
-#define ID_SURROUND         -1
+// ==== Dir works ====
 #define DIRNAME_SURROUND    "Surround"
-int32_t IdPlayingNow = ID_SURROUND, IdPlayNext = ID_SURROUND;
-static char DirName[18];
+#define DIRNAME_MAX_LEN     18
+
+static char DirName[DIRNAME_MAX_LEN];
+static char CurrentDir[DIRNAME_MAX_LEN] = DIRNAME_SURROUND;
+static char NextDir[DIRNAME_MAX_LEN] = DIRNAME_SURROUND;
+
+void SwitchToDir() {
+    if((strcmp(CurrentDir, DIRNAME_SURROUND) == 0) or  // if playing surround
+       (strcmp(CurrentDir, DirName) != 0)) {           // or new name received
+        // Fadeout surround and play rcvd id
+        strcpy(NextDir, DirName);
+        Player.FadeOut();
+    }
+}
+
+// ==== Table "ID-Dirname" ====
+#define DIRTABLE_MAX_CNT    99
+class IDTable_t {
+private:
+    uint32_t Cnt;
+    MifareID_t IId[DIRTABLE_MAX_CNT];
+    char IDirName[DIRTABLE_MAX_CNT][DIRNAME_MAX_LEN];
+public:
+    uint8_t GetDirnameByID(MifareID_t *pID, char *PDirName) {
+        for(uint32_t i=0; i<Cnt; i++) {
+            if(IId[i] == *pID) {
+                strcpy(PDirName, IDirName[i]);
+                Printf("Dir: %S\r", PDirName);
+                return retvOk;
+            }
+        }
+        Printf("ID not found\r");
+        return retvNotFound;
+    }
+    void Load() {
+        IId[0].ID32[0] = 0x88A79334;
+        IId[0].ID32[1] = 0x666F3D39;
+        strcpy(IDirName[0], "1");
+        Cnt = 1;
+    }
+} IDTable;
 
 TmrKL_t tmrPauseAfter {evtIdPauseEnds, tktOneShot};
 
@@ -71,6 +110,7 @@ int main(void) {
 //    Acc.Init();
 
     SD.Init();
+    IDTable.Load();
     Player.Init();
 
 //    SimpleSensors::Init();
@@ -92,32 +132,14 @@ void ITask() {
                 ((Shell_t*)Msg.Ptr)->SignalCmdProcessed();
                 break;
 
-            case evtIdOnRx: {
-                int32_t rxID = Msg.Value;
-                if(IdPlayingNow == ID_SURROUND) {
-//                    if(RxTable.EnoughTimePassed(rxID)) {
-//                        // Fadeout surround and play rcvd id
-//                        IdPlayNext = rxID;
-//                        Player.FadeOut();
-//                    }
-                }
-                else { // Playing some ID
-                    if(rxID != IdPlayingNow) {  // Some new ID received
-                        // Switch to new ID if current one is offline for enough time
-//                        if(RxTable.EnoughTimePassed(IdPlayingNow)) {
-                            // Fadeout current and play rcvd id
-//                            IdPlayNext = rxID;
-//                            Player.FadeOut();
-//                        }
-                    }
-                }
-                // Put timestamp to table
-//                RxTable.Put(rxID);
-            } break;
-
             case evtIdCardAppeared: {
                 MifareID_t *PId = (MifareID_t*)Msg.Ptr;
-                Printf("Card: %A\r", PId->ID8, 8, ' ');
+                Printf("Card: 0x%X 0x%X\r", PId->ID32[0], PId->ID32[1], 8, ' ');
+                // Get dirname according to card ID
+                if(IDTable.GetDirnameByID(PId, DirName) == retvOk) {
+//                    Player.PlayRandomFileFromDir(DirName);
+                    SwitchToDir();
+                }
             } break;
 
             case evtIdCardDisappeared:
@@ -142,12 +164,9 @@ void ITask() {
 
             case evtIdPlayEnd: {
                 Printf("PlayEnd\r");
-                IdPlayingNow = IdPlayNext;
-                IdPlayNext = ID_SURROUND;
-                // Decide what to play: surround or some id
-                if(IdPlayingNow == ID_SURROUND) strcpy(DirName, DIRNAME_SURROUND);
-                else itoa(IdPlayingNow, DirName, 10);
-//                Printf("Play %S\r", DirName);
+                strcpy(CurrentDir, NextDir);
+                strcpy(NextDir, DIRNAME_SURROUND);
+                Printf("PlayDir %S\r", DirName);
                 Player.PlayRandomFileFromDir(DirName);
             } break;
 
@@ -168,17 +187,6 @@ void OnRadioRx(uint8_t AID, int8_t Rssi) {
     // Inform main thread
     EvtMsg_t Msg(evtIdOnRx, (int32_t)AID);
     EvtQMain.SendNowOrExit(Msg);
-}
-
-void ProcessChargePin(PinSnsState_t *PState, uint32_t Len) {
-    if(*PState == pssFalling) { // Charge started
-        Led.StartOrContinue(lsqCharging);
-        Printf("Charge started\r");
-    }
-    if(*PState == pssRising) { // Charge ended
-        Led.StartOrContinue(lsqOperational);
-        Printf("Charge ended\r");
-    }
 }
 
 #if 1 // ======================= Command processing ============================
