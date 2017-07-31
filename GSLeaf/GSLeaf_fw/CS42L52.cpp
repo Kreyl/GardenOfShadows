@@ -158,6 +158,7 @@ void CS42L52_t::Init() {
     PinRst.Init();
     // Remove reset
     PinRst.SetHi();
+    chThdSleepMilliseconds(18);
     // Init i2c
     AU_i2c.Init();
 //    AU_i2c.ScanBus();

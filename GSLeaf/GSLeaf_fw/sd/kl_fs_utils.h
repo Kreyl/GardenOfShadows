@@ -9,6 +9,7 @@
 
 #include "ff.h"
 #include "kl_lib.h"
+#include "shell.h"
 
 // Variables
 extern FILINFO FileInfo;
@@ -35,8 +36,8 @@ uint8_t ReadLine(FIL *PFile, char* S, uint32_t MaxLen);
 
 uint8_t CountFilesInDir(const char* DirName, const char* Extension, uint32_t *PCnt);
 
-// =========================== ini file operations =============================
 #define SD_STRING_SZ    256 // for operations with strings
+// =========================== ini file operations =============================
 /*
  * ini file has the following structure:
  *
@@ -68,4 +69,34 @@ static uint8_t iniRead(const char *AFileName, const char *ASection, const char *
         return retvOk;
     }
     else return retvFail;
+}
+
+// =========================== csv file operations =============================
+/*
+ * csv file has the following structure:
+ *
+ * # this is comment
+ * 14, 0x38, "DirName1"
+ * 15, 0, "DirName2"
+ * ...
+ *
+ * Usage:
+ */
+
+uint8_t csvOpenFile(const char *AFileName);
+void csvCloseFile();
+uint8_t csvReadNextLine();
+void csvGetNextCellString(char* POutput);
+uint8_t csvGetNextToken(char** POutput);
+
+template <typename T>
+static uint8_t csvGetNextCell(T *POutput) {
+    char *Token;
+    if(csvGetNextToken(&Token) == retvOk) {
+        char *p;
+        *POutput = (T)strtoul(Token, &p, 0);
+        if(*p == '\0') return retvOk;
+        else return retvNotANumber;
+    }
+    else return retvEmpty;
 }

@@ -13,6 +13,7 @@
 FILINFO FileInfo;
 DIR Dir;
 FIL IFile;
+char IStr[SD_STRING_SZ];
 
 uint8_t TryOpenFileRead(const char *Filename, FIL *PFile) {
     FRESULT rslt = f_open(PFile, Filename, FA_READ);
@@ -75,7 +76,7 @@ uint8_t ReadLine(FIL *PFile, char* S, uint32_t MaxLen) {
 
 uint8_t CountFilesInDir(const char* DirName, const char* Extension, uint32_t *PCnt) {
     FRESULT Rslt = f_opendir(&Dir, DirName);
-    Printf("Dir %S: %u\r", DirName, Rslt);
+//    Printf("Dir %S: %u\r", DirName, Rslt);
     if(Rslt != FR_OK) return retvFail;
     *PCnt = 0;
     while(true) {
@@ -98,9 +99,6 @@ uint8_t CountFilesInDir(const char* DirName, const char* Extension, uint32_t *PC
 }
 
 #if 1 // ======================= ini file operations ===========================
-// ==== Inner use ====
-char IStr[SD_STRING_SZ];
-
 static inline char* skipleading(char *S) {
     while (*S != '\0' && *S <= ' ') S++;
     return S;
@@ -177,15 +175,54 @@ uint8_t iniReadString(const char *AFileName, const char *ASection, const char *A
     *PPOutput = StartP;
     return retvOk;
 }
+#endif
 
-//template <typename T>
-//uint8_t iniRead(const char *AFileName, const char *ASection, const char *AKey, T *POutput) {
-//    char *S = nullptr;
-//    if(iniReadString(AFileName, ASection, AKey, &S) == retvOk) {
-//        int32_t tmp = strtol(S, NULL, 10);
-//        *POutput = (T)tmp;
-//        return retvOk;
-//    }
-//    else return retvFail;
-//}
+#if 1 // ========================== csv file operations ========================
+#define CSV_DELIMITERS  " ,\r\n"
+static char *csvCurToken;
+
+uint8_t csvOpenFile(const char *AFileName) {
+    return TryOpenFileRead(AFileName, &IFile);
+}
+
+uint8_t csvReadNextLine() {
+    // Move through file until comments end
+    while(true) {
+        if(f_eof(&IFile) or f_gets(IStr, SD_STRING_SZ, &IFile) == nullptr) {
+//            Printf("csvNoMoreData\r");
+            return retvEndOfFile;
+        }
+        csvCurToken = strtok(IStr, CSV_DELIMITERS);
+        if(*csvCurToken == '#') continue;    // Skip comments
+        else return retvOk;
+    }
+}
+
+uint8_t csvGetNextToken(char** POutput) {
+    // First time, return csvCurToken, as it was set in ReadNextLine
+    if(csvCurToken != nullptr) {
+        *POutput = csvCurToken;
+        csvCurToken = nullptr;
+    }
+    else *POutput = strtok(NULL, CSV_DELIMITERS);
+    return (*POutput == '\0')? retvEmpty : retvOk;
+}
+
+void csvGetNextCellString(char* POutput) {
+    char *Token;
+    if(csvGetNextToken(&Token) == retvOk) {
+        // Skip leading quotes
+        char *StartP = Token;
+        while(*StartP == '"' and *StartP != '\0') StartP++;
+        char *EndP = Token + strlen(Token) - 1;
+        while(*EndP == '"' and EndP > Token) EndP--;
+        int32_t Len = EndP - StartP + 1;
+        if(Len > 0) strncpy(POutput, StartP, Len);
+        else *POutput = '\0';
+    }
+}
+
+void csvCloseFile() {
+    f_close(&IFile);
+}
 #endif

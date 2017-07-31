@@ -32,10 +32,11 @@ CS42L52_t Audio;
 AuPlayer_t Player;
 
 // ==== Dir works ====
+#define TABLE_FILENAME      "table.ini"
 #define DIRNAME_SURROUND    "Surround"
 #define DIRNAME_MAX_LEN     18
 
-static char DirName[DIRNAME_MAX_LEN];
+static char DirName[DIRNAME_MAX_LEN] = DIRNAME_SURROUND;
 static char CurrentDir[DIRNAME_MAX_LEN] = DIRNAME_SURROUND;
 static char NextDir[DIRNAME_MAX_LEN] = DIRNAME_SURROUND;
 
@@ -67,11 +68,22 @@ public:
         Printf("ID not found\r");
         return retvNotFound;
     }
+
     void Load() {
-        IId[0].ID32[0] = 0x88A79334;
-        IId[0].ID32[1] = 0x666F3D39;
-        strcpy(IDirName[0], "1");
-        Cnt = 1;
+        Cnt = 0;
+        if(csvOpenFile("table.csv") == retvOk) {
+            while(true) {
+                if(csvReadNextLine() == retvOk) {
+                    if(csvGetNextCell<uint32_t>(&IId[Cnt].ID32[0]) != retvOk) break;
+                    if(csvGetNextCell<uint32_t>(&IId[Cnt].ID32[1]) != retvOk) break;
+                    csvGetNextCellString(IDirName[Cnt]);
+                    Printf(" %X %X %S\r", IId[Cnt].ID32[0], IId[Cnt].ID32[1], IDirName[Cnt]);
+                    Cnt++;
+                }
+                else break;
+            } // while true
+            csvCloseFile();
+        }
     }
 } IDTable;
 
@@ -136,10 +148,7 @@ void ITask() {
                 MifareID_t *PId = (MifareID_t*)Msg.Ptr;
                 Printf("Card: 0x%X 0x%X\r", PId->ID32[0], PId->ID32[1], 8, ' ');
                 // Get dirname according to card ID
-                if(IDTable.GetDirnameByID(PId, DirName) == retvOk) {
-//                    Player.PlayRandomFileFromDir(DirName);
-                    SwitchToDir();
-                }
+                if(IDTable.GetDirnameByID(PId, DirName) == retvOk) SwitchToDir();
             } break;
 
             case evtIdCardDisappeared:
@@ -179,14 +188,6 @@ void ITask() {
             default: break;
         } // switch
     } // while true
-}
-
-void OnRadioRx(uint8_t AID, int8_t Rssi) {
-    Printf("Rx %u %d\r", AID, Rssi);
-//    if(AID < RCHNL_MIN or AID > RCHNL_MAX) return;
-    // Inform main thread
-    EvtMsg_t Msg(evtIdOnRx, (int32_t)AID);
-    EvtQMain.SendNowOrExit(Msg);
 }
 
 #if 1 // ======================= Command processing ============================
