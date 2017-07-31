@@ -93,6 +93,8 @@ void PN532_t::Init() {
     else if(div > 2)  ClkDiv = sclkDiv4;
 
     ISpi.Setup(boLSB, cpolIdleLow, cphaFirstEdge, ClkDiv);
+    ISpi.EnableRxDma();
+    ISpi.EnableTxDma();
     ISpi.Enable();
     // ==== DMA ====
     // Tx
@@ -127,7 +129,7 @@ void PN532_t::ITask() {
                     if(CardAppeared()) {
                         if(MifareRead(0) == retvOk) {
                             CardOk = true;
-                            Printf("Card Appeared\r");
+//                            Printf("Card Appeared\r");
                             CardID.ConstructOfBuf(PReply->Buf);
                             EvtMsg_t Msg(evtIdCardAppeared, &CardID);
                             EvtQMain.SendWaitingAbility(Msg, MS2ST(900));
@@ -136,7 +138,7 @@ void PN532_t::ITask() {
                 }
                 else {
                     if(!CardIsStillNear()) {
-                        Printf("Card Lost\r");
+//                        Printf("Card Lost\r");
                         CardOk = false;
                         EvtMsg_t Msg(evtIdCardDisappeared);
                         EvtQMain.SendWaitingAbility(Msg, MS2ST(900));
@@ -328,8 +330,6 @@ void PN532_t::ITxRx(uint8_t *PRx, uint32_t ALength) {
 #ifdef PRINT_IO
     Printf(">> %A\r", IBuf, ALength, ' ');
 #endif
-//    ISpi.ClearOVR();    // Clear OVERFLOW flag
-    ISpi.ClearRxBuf();
     chSysLock();
     // RX
     if(PRx != nullptr) { dmaStreamSetMemory0(PN_DMA_RX, PRx); }
@@ -337,21 +337,13 @@ void PN532_t::ITxRx(uint8_t *PRx, uint32_t ALength) {
     dmaStreamSetTransactionSize(PN_DMA_RX, ALength);
     dmaStreamSetMode(PN_DMA_RX, PN_DMA_RX_MODE);
     dmaStreamEnable(PN_DMA_RX);
-    ISpi.EnableRxDma();
     // TX
     dmaStreamSetMemory0(PN_DMA_TX, IBuf);
     dmaStreamSetTransactionSize(PN_DMA_TX, ALength);
     dmaStreamSetMode(PN_DMA_TX, PN_DMA_TX_MODE);
     dmaStreamEnable(PN_DMA_TX);
-    ISpi.EnableTxDma();
     chThdSuspendS(&ThdRef); // Wait IRQ
     chSysUnlock();
-//    uint8_t *p = PRx;
-//    for(uint32_t i=0; i<ALength; i++) {
-//        uint8_t b = ISpi.ReadWriteByte(*PTx++);
-//        if(PRx != nullptr) *p++ = b;
-//    }
-//    ISpi.WaitBsyHi2Lo();
 #ifdef PRINT_IO
     if(PRx != nullptr) Printf("<< %A\r", PRx, ALength, ' ');
 #endif
@@ -383,15 +375,10 @@ extern "C" {
 // DMA transmission complete
 void PnDmaTxCompIrq(void *p, uint32_t flags) {
     dmaStreamDisable(PN_DMA_TX);    // Disable DMA
-//    Pn.ISpi.DisableTxDma();         // Disable SPI DMA
-//    chSysLockFromISR();
-//    chThdResumeI(&ThdRef, MSG_OK);
-//    chSysUnlockFromISR();
 }
 // DMA reception complete
 void PnDmaRxCompIrq(void *p, uint32_t flags) {
     dmaStreamDisable(PN_DMA_RX); // Disable DMA
-    Pn.ISpi.DisableRxDma();
     chSysLockFromISR();
     chThdResumeI(&ThdRef, MSG_OK);
     chSysUnlockFromISR();

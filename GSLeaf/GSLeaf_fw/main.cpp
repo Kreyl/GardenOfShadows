@@ -123,6 +123,15 @@ void ITask() {
 //                RxTable.Put(rxID);
             } break;
 
+            case evtIdCardAppeared: {
+                MifareID_t *PId = (MifareID_t*)Msg.Ptr;
+                Printf("Card: %A\r", PId->ID8, 8, ' ');
+            } break;
+
+            case evtIdCardDisappeared:
+                Printf("Card lost\r");
+                break;
+
 //            case evtIdAcc:
 //                if(State == stIdle) {
 //                    Printf("AccWhenIdle\r");
