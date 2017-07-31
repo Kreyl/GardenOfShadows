@@ -75,7 +75,7 @@ uint8_t ReadLine(FIL *PFile, char* S, uint32_t MaxLen) {
 
 uint8_t CountFilesInDir(const char* DirName, const char* Extension, uint32_t *PCnt) {
     FRESULT Rslt = f_opendir(&Dir, DirName);
-//    Printf("Dir %S: %u\r", DirName, Rslt);
+    Printf("Dir %S: %u\r", DirName, Rslt);
     if(Rslt != FR_OK) return retvFail;
     *PCnt = 0;
     while(true) {

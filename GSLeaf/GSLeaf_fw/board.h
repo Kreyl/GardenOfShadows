@@ -39,8 +39,9 @@
 #define INDIVIDUAL_EXTI_IRQ_REQUIRED    FALSE
 
 // Buttons
-#define BTN1_PIN        GPIOA, 0, pudPullDown
-#define BTN2_PIN        GPIOA, 1, pudPullDown
+#define BTN_COM_PIN     GPIOA, 0, pudPullUp
+#define BTN_UP_PIN      GPIOA, 1, pudPullUp
+#define BTN_DOWN_PIN    GPIOC, 0, pudPullUp
 
 // UART
 #define UART_GPIO       GPIOA
@@ -53,17 +54,11 @@
 #define LED_GREEN_CH    { GPIOB, 1, TIM3, 4, invNotInverted, omPushPull, 255 }
 #define LED_BLUE_CH     { GPIOB, 4, TIM3, 1, invNotInverted, omPushPull, 255 }
 
-// PWR_EN
-#define PWR_EN_PIN      GPIOA, 15, omPushPull
-// Charge
-#define CHARGE_PIN      GPIOB, 11, pudPullUp
-
 // CS42L52
 #define AU_RESET        GPIOB, 3, omPushPull
+#define AU_MCLK         GPIOA, 8, omPushPull, pudNone, AF0  // MCO
 #define AU_SDIN         GPIOC, 3, omPushPull, pudNone, AF13 // MOSI; SAI1_A
 #define AU_SDOUT        GPIOB, 5, omPushPull, pudNone, AF13 // MISO; SAI1_B
-#define AU_MCLK         GPIOB, 8, omPushPull, pudNone, AF13
-#define AU_MCLK_TIM     { GPIOB, 8, TIM4, 3, invNotInverted, omPushPull, 1 }
 #define AU_LRCK         GPIOB, 9, omPushPull, pudNone, AF13
 #define AU_SCLK         GPIOB, 10, omPushPull, pudNone, AF13
 #define AU_i2c          i2c1
@@ -76,6 +71,7 @@
 #define Acc_i2c         i2c1
 #define ACC_IRQ_GPIO    GPIOB
 #define ACC_IRQ_PIN     2
+#define ACC_PWR_PIN     GPIOB, 8
 
 // PN
 #define PN_IRQ_PIN      GPIOC, 1, pudNone
@@ -159,9 +155,9 @@
 #define PN_DMA_CHNL     1
 
 // ==== I2C ====
-#define I2C1_DMA_TX     STM32_DMA2_STREAM7
-#define I2C1_DMA_RX     STM32_DMA2_STREAM6
-#define I2C1_DMA_CHNL   5
+#define I2C1_DMA_TX     STM32_DMA1_STREAM6
+#define I2C1_DMA_RX     STM32_DMA1_STREAM7
+#define I2C1_DMA_CHNL   3
 #define I2C2_DMA_TX     STM32_DMA1_STREAM4
 #define I2C2_DMA_RX     STM32_DMA1_STREAM5
 #define I2C2_DMA_CHNL   3
@@ -175,7 +171,7 @@
 #define SAI_DMA_CHNL    1
 
 // ==== SDMMC ====
-#define STM32_SDC_SDMMC1_DMA_STREAM   STM32_DMA_STREAM_ID(2, 5)
+#define STM32_SDC_SDMMC1_DMA_STREAM   STM32_DMA_STREAM_ID(2, 4)
 
 #if ADC_REQUIRED
 #define ADC_DMA         STM32_DMA1_STREAM1

@@ -23,14 +23,12 @@
 
 // Handlers
 extern void ProcessButtons(PinSnsState_t *PState, uint32_t Len);
-extern void ProcessChargePin(PinSnsState_t *PState, uint32_t Len);
 
 const PinSns_t PinSns[] = {
         // Buttons
-        {BTN1_PIN, ProcessButtons},
-        {BTN2_PIN, ProcessButtons},
-        // Charge pin
-        {CHARGE_PIN, ProcessChargePin},
+        {BTN_COM_PIN, ProcessButtons},
+        {BTN_UP_PIN, ProcessButtons},
+        {BTN_DOWN_PIN, ProcessButtons},
 };
 #define PIN_SNS_CNT     countof(PinSns)
 

@@ -28,7 +28,6 @@ void ITask();
 #define PAUSE_BEFORE_REPEAT_S       7
 
 LedRGB_t Led { LED_RED_CH, LED_GREEN_CH, LED_BLUE_CH };
-PinOutput_t PwrEn(PWR_EN_PIN);
 CS42L52_t Audio;
 AuPlayer_t Player;
 
@@ -41,7 +40,8 @@ TmrKL_t tmrPauseAfter {evtIdPauseEnds, tktOneShot};
 
 int main(void) {
     // ==== Setup clock frequency ====
-//    Clk.SetHiPerfMode();
+    Clk.SetHiPerfMode();
+    Clk.Select48MhzSrc(src48PllQ);
     Clk.UpdateFreqValues();
 
     // Init OS
@@ -53,38 +53,30 @@ int main(void) {
     Printf("\r%S %S\r\n", APP_NAME, BUILD_TIME);
     Clk.PrintFreqs();
 
-//    Clk.Select48MhzSrc(src48PllQ);
-
     Led.Init();
+    Led.StartOrRestart(lsqStart);
     Pn.Init();
 
-//    PwrEn.Init();
-//    PwrEn.SetLo();
-//    chThdSleepMilliseconds(18);
+    // Power on Acc to eliminate phantom powering of it through i2c pull-ups
+    PinSetupOut(ACC_PWR_PIN, omPushPull);
+    PinSetHi(ACC_PWR_PIN);
+    chThdSleepMilliseconds(18);
 
     // Audio
-//    i2c1.Init();
-//    Audio.Init();
-//    Audio.SetSpeakerVolume(-96);    // To remove speaker pop at power on
-//    Audio.DisableSpeakers();
-//    Audio.EnableHeadphones();
+    Audio.Init();   // i2c initialized inside, as pull-ups powered by VAA's LDO
+    Audio.SetSpeakerVolume(-96);    // To remove speaker pop at power on
+    Audio.DisableSpeakers();
+    Audio.EnableHeadphones();
 
-//    i2c1.ScanBus();
 //    Acc.Init();
 
-//    SD.Init();
-//    Player.Init();
-
-//    Audio.SetSpeakerVolume(0);
-//    Audio.Standby();
-
-//    if(Radio.Init() == retvOk) Led.StartOrRestart(lsqStart);
-//    else Led.StartOrRestart(lsqFailure);
+    SD.Init();
+    Player.Init();
 
 //    SimpleSensors::Init();
 
     // Start playing surround music
-//    Player.PlayRandomFileFromDir(DIRNAME_SURROUND);
+    Player.PlayRandomFileFromDir(DIRNAME_SURROUND);
 
     // Main cycle
     ITask();

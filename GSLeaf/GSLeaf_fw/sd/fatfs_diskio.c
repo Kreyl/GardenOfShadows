@@ -43,7 +43,7 @@ extern RTCDriver RTCD1;
 semaphore_t semSDRW;
 
 bool SDRead(uint32_t startblk, uint8_t *buffer, uint32_t n) {
-//    PrintfC("%S\r", __FUNCTION__);
+    PrintfC("%S\r", __FUNCTION__);
     msg_t msg = chSemWaitTimeout(&semSDRW, MS2ST(3600));
     if(msg == MSG_OK) {
 //        PrintfC(" +%S ", chThdSelf()->p_name);

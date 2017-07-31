@@ -50,7 +50,7 @@
 enum BtnName_t {btnUp=0, btnDown=1};
 
 // Define correct button behavior depending on schematic
-#define BTN_IDLE_LOW                TRUE
+#define BTN_IDLE_LOW                FALSE
 // =============================================================================
 
 // Selected depending on Idle state

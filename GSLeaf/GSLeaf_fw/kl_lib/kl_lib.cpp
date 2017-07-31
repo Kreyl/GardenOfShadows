@@ -1698,7 +1698,8 @@ void Clk_t::SetHiPerfMode() {
     if(EnableHSE() == retvOk) {
         // Setup PLL (must be disabled first)
 //        if(SetupPllMulDiv(1, 24, 4, 6) == retvOk) { // 12MHz / 1 * 24 => 72 and 48MHz
-        if(SetupPllMulDiv(2, 16, 2, 2) == retvOk) { // 12MHz / 1 * 8 / 2 => 48 and 48MHz
+//        if(SetupPllMulDiv(1, 8, 2, 2) == retvOk) { // 12MHz / 1 * 8 / 2 => 48 and 48MHz
+        if(SetupPllMulDiv(1, 8, 6, 2) == retvOk) { // 12MHz / 1 * 8 / (6 and 2) => 16 and 48MHz
             SetupBusDividers(ahbDiv1, apbDiv1, apbDiv1);
             SetVoltageRange(mvrHiPerf);
 //            SetupFlashLatency(72, mvrHiPerf);

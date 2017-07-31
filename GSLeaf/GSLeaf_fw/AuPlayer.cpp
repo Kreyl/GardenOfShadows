@@ -276,7 +276,7 @@ void AuPlayer_t::PlayRandomFileFromDir(const char* DirName) {
     uint32_t Cnt=0;
     uint8_t Rslt = CountFilesInDir(DirName, "wav", &Cnt);
     if(Rslt != retvOk or Cnt == 0) return;       // Get out if nothing to play
-//    Printf("R=%u; Cnt=%u\r", Rslt, Cnt);
+    Printf("R=%u; Cnt=%u\r", Rslt, Cnt);
     // Select number of file
     uint32_t N = 0;
     if(Cnt > 1) {   // Get random number if count > 1

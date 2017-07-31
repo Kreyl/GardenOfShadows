@@ -133,8 +133,7 @@ private:
     inline void IRstHi()  { PinSetHi(PN_RST_PIN); }
     inline void INssLo()  {
         PinSetLo(PN_NSS_PIN);
-        Loop(200);
-        // chThdSleepMicroseconds(20);
+        chThdSleepMicroseconds(50); // PN will not work without this delay
     }
     inline void INssHi()  { PinSetHi(PN_NSS_PIN); }
     // Inner use
