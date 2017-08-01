@@ -176,8 +176,8 @@ void ITask() {
                 Printf("PlayEnd\r");
                 strcpy(CurrentDir, NextDir);
                 strcpy(NextDir, DIRNAME_SURROUND);
-                Printf("PlayDir %S\r", DirName);
-                Player.PlayRandomFileFromDir(DirName);
+                Printf("PlayDir %S\r", CurrentDir);
+                Player.PlayRandomFileFromDir(CurrentDir);
             } break;
 
             case evtIdButtons:
