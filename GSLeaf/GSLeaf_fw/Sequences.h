@@ -213,6 +213,13 @@ const LedRGBChunk_t lsqFailure[] = {
         {csEnd}
 };
 
+const LedRGBChunk_t lsqCardFound[] = {
+        {csSetup, 0, clGreen},
+        {csWait, 90},
+        {csSetup, 90, {0, 2, 0}},
+        {csEnd}
+};
+
 const LedRGBChunk_t lsqCharging[] = {
         {csSetup, 360, clBlue},
         {csSetup, 360, clBlack},

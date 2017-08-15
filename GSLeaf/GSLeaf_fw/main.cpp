@@ -148,6 +148,8 @@ void ITask() {
             case evtIdCardAppeared: {
                 MifareID_t *PId = (MifareID_t*)Msg.Ptr;
                 Printf("Card: 0x%X 0x%X\r", PId->ID32[0], PId->ID32[1], 8, ' ');
+                // Blink LED
+                Led.StartOrContinue(lsqCardFound);
                 // Get dirname according to card ID
                 if(IDTable.GetDirnameByID(PId, DirName) == retvOk) SwitchToDir();
             } break;
