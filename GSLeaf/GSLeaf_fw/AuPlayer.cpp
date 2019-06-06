@@ -85,7 +85,7 @@ void AuPlayer_t::ITask() {
             uint32_t *PBufToFill = (PCurBuf == Buf1)? Buf2 : Buf1;
             // Fill buff
             if(Info.ChunkSz != 0) {
-                BufSz = MIN(Info.ChunkSz, FRAME_BUF_SZ);
+                BufSz = MIN_(Info.ChunkSz, FRAME_BUF_SZ);
                 if(TryRead(&IFile, PBufToFill, BufSz) != retvOk) {
                     f_close(&IFile);
                     BufSz = 0;
@@ -96,7 +96,7 @@ void AuPlayer_t::ITask() {
 
             // Effects
             if(Effect == peFadeOut) {
-                if(chVTTimeElapsedSinceX(ITime) >= MS2ST(63)) {
+                if(chVTTimeElapsedSinceX(ITime) >= TIME_MS2I(63)) {
                     if(CurrentVolume > -63) {
                         CurrentVolume--;
                         Audio.SetVolume(CurrentVolume);
@@ -129,7 +129,8 @@ uint8_t AuPlayer_t::Play(const char* AFileName) {
     // Try to open file
     if(OpenWav(AFileName) != retvOk) return retvFail;
     // Setup audio
-    Audio.SetupParams((Info.ChannelCnt == 1)? Mono : Stereo, Info.SampleRate);
+    Audio.SetupMonoStereo((Info.ChannelCnt == 1)? Mono : Stereo);
+    Audio.SetupSampleRate(Info.SampleRate);
 
     // Fill both buffers
     char ChunkID[4] = {0, 0, 0, 0};
@@ -140,14 +141,14 @@ uint8_t AuPlayer_t::Play(const char* AFileName) {
     if(memcmp(ChunkID, "data", 4) == 0) {  // "data" found
         // Read first buf
         PCurBuf = Buf1;
-        BufSz = MIN(Info.ChunkSz, FRAME_BUF_SZ);
+        BufSz = MIN_(Info.ChunkSz, FRAME_BUF_SZ);
         if(TryRead(&IFile, Buf1, BufSz) != retvOk) goto end;
         // Start transmission
         Audio.TransmitBuf(PCurBuf, BufSz);
         // Read second buf
         Info.ChunkSz -= BufSz;
         if(Info.ChunkSz != 0) {
-            BufSz = MIN(Info.ChunkSz, FRAME_BUF_SZ);
+            BufSz = MIN_(Info.ChunkSz, FRAME_BUF_SZ);
             if(TryRead(&IFile, Buf2, BufSz) != retvOk) goto end;
             Info.ChunkSz -= BufSz;
         }
@@ -281,7 +282,7 @@ void AuPlayer_t::PlayRandomFileFromDir(const char* DirName) {
     uint32_t N = 0;
     if(Cnt > 1) {   // Get random number if count > 1
         do {
-            N = Random(0, Cnt-1);   // [0; Cnt-1]
+            N = Random::Generate(0, Cnt-1);   // [0; Cnt-1]
         } while(N == PreviousN);    // skip same as previous
     }
 //    Printf("; Random=%u", N);

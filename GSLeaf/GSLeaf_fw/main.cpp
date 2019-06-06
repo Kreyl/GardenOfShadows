@@ -9,7 +9,7 @@
 #include "AuPlayer.h"
 #include "acc_mma8452.h"
 #include "kl_fs_utils.h"
-#include "radio_lvl1.h"
+//#include "radio_lvl1.h"
 #include "SimpleSensors.h"
 
 #if 1 // ======================== Variables and defines ========================
@@ -28,7 +28,7 @@ CS42L52_t Audio;
 AuPlayer_t Player;
 
 //int32_t IdPlayingNow = ID_SURROUND, IdPlayNext = ID_SURROUND;
-static char DirName[18];
+//static char DirName[18];
 
 TmrKL_t tmrPauseAfter {evtIdPauseEnds, tktOneShot};
 #endif
@@ -56,8 +56,8 @@ int main(void) {
     chThdSleepMilliseconds(18);
 
     // Audio
-//    i2c1.Init();
-//    Audio.Init();
+    i2c1.Init();
+    Audio.Init();
 //    Audio.SetSpeakerVolume(-96);    // To remove speaker pop at power on
 //    Audio.DisableSpeakers();
 //    Audio.EnableHeadphones();
@@ -71,10 +71,10 @@ int main(void) {
 //    Audio.SetSpeakerVolume(0);
 //    Audio.Standby();
 
-    if(Radio.Init() == retvOk) Led.StartOrRestart(lsqStart);
-    else Led.StartOrRestart(lsqFailure);
+//    if(Radio.Init() == retvOk) Led.StartOrRestart(lsqStart);
+//    else Led.StartOrRestart(lsqFailure);
 
-    SimpleSensors::Init();
+//    SimpleSensors::Init();
 
     // Start playing surround music
 //    Player.PlayRandomFileFromDir(DIRNAME_SURROUND);
@@ -154,13 +154,13 @@ void ITask() {
     } // while true
 }
 
-void OnRadioRx(uint8_t AID, int8_t Rssi) {
-    Printf("Rx %u %d\r", AID, Rssi);
-    if(AID < RCHNL_MIN or AID > RCHNL_MAX) return;
-    // Inform main thread
-    EvtMsg_t Msg(evtIdOnRx, (int32_t)AID);
-    EvtQMain.SendNowOrExit(Msg);
-}
+//void OnRadioRx(uint8_t AID, int8_t Rssi) {
+//    Printf("Rx %u %d\r", AID, Rssi);
+//    if(AID < RCHNL_MIN or AID > RCHNL_MAX) return;
+//    // Inform main thread
+//    EvtMsg_t Msg(evtIdOnRx, (int32_t)AID);
+//    EvtQMain.SendNowOrExit(Msg);
+//}
 
 void ProcessChargePin(PinSnsState_t *PState, uint32_t Len) {
     if(*PState == pssFalling) { // Charge started
@@ -180,25 +180,25 @@ void OnCmd(Shell_t *PShell) {
 //    Uart.Printf("\r%S\r", PCmd->Name);
     // Handle command
     if(PCmd->NameIs("Ping")) PShell->Ack(retvOk);
-    else if(PCmd->NameIs("Version")) PShell->Printf("%S %S\r", APP_NAME, BUILD_TIME);
+    else if(PCmd->NameIs("Version")) PShell->Print("%S %S\r", APP_NAME, XSTRINGIFY(BUILD_TIME));
 
-    else if(PCmd->NameIs("V")) {
-        int8_t v;
-        if(PCmd->GetNext<int8_t>(&v) != retvOk) { PShell->Ack(retvCmdError); return; }
-        Audio.SetMasterVolume(v);
-    }
-    else if(PCmd->NameIs("SV")) {
-        int8_t v;
-        if(PCmd->GetNext<int8_t>(&v) != retvOk) { PShell->Ack(retvCmdError); return; }
-        Audio.SetSpeakerVolume(v);
-    }
+//    else if(PCmd->NameIs("V")) {
+//        int8_t v;
+//        if(PCmd->GetNext<int8_t>(&v) != retvOk) { PShell->Ack(retvCmdError); return; }
+//        Audio.SetMasterVolume(v);
+//    }
+//    else if(PCmd->NameIs("SV")) {
+//        int8_t v;
+//        if(PCmd->GetNext<int8_t>(&v) != retvOk) { PShell->Ack(retvCmdError); return; }
+//        Audio.SetSpeakerVolume(v);
+//    }
 
-    else if(PCmd->NameIs("A")) Player.Play("Alive.wav");
-    else if(PCmd->NameIs("48")) {
-        Audio.Resume();
-        Player.Play("Mocart48.wav");
-    }
-    else if(PCmd->NameIs("FO")) Player.FadeOut();
+//    else if(PCmd->NameIs("A")) Player.Play("Alive.wav");
+//    else if(PCmd->NameIs("48")) {
+//        Audio.Resume();
+//        Player.Play("Mocart48.wav");
+//    }
+//    else if(PCmd->NameIs("FO")) Player.FadeOut();
 
 
     else PShell->Ack(retvCmdUnknown);

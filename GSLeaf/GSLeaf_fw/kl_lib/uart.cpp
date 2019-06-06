@@ -393,10 +393,10 @@ void BaseUart_t::Shutdown() {
     else if(Params->Uart == USART3) { rccDisableUSART3(); }
 #endif
 #if defined UART4
-    else if(Params->Uart == UART4) { rccDisableUART4(FALSE); }
+    else if(Params->Uart == UART4) { rccDisableUART4(); }
 #endif
 #if defined UART5
-    else if(Params->Uart == UART5) { rccDisableUART5(FALSE); }
+    else if(Params->Uart == UART5) { rccDisableUART5(); }
 #endif
 }
 

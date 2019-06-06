@@ -44,7 +44,7 @@ semaphore_t semSDRW;
 
 bool SDRead(uint32_t startblk, uint8_t *buffer, uint32_t n) {
 //    PrintfC("%S\r", __FUNCTION__);
-    msg_t msg = chSemWaitTimeout(&semSDRW, MS2ST(3600));
+    msg_t msg = chSemWaitTimeout(&semSDRW, TIME_MS2I(3600));
     if(msg == MSG_OK) {
 //        PrintfC(" +%S ", chThdSelf()->p_name);
         bool rslt = sdcRead(&SDCD1, startblk, buffer, n);
@@ -59,7 +59,7 @@ bool SDRead(uint32_t startblk, uint8_t *buffer, uint32_t n) {
 }
 
 bool SDWrite(uint32_t startblk, const uint8_t *buffer, uint32_t n) {
-    msg_t msg = chSemWaitTimeout(&semSDRW, MS2ST(3600));
+    msg_t msg = chSemWaitTimeout(&semSDRW, TIME_MS2I(3600));
     if(msg == MSG_OK) {
         bool rslt = sdcWrite(&SDCD1, startblk, buffer, n);
         chSemSignal(&semSDRW);

@@ -162,7 +162,7 @@ void CS42L52_t::Init() {
     // Init i2c
     AU_i2c.Init();
     AU_i2c.CheckAddress(0x4A); // Otherwise it does not work.
-//    AU_i2c.ScanBus();
+    AU_i2c.ScanBus();
     // Check if connected
     uint8_t b;
     uint8_t r = ReadReg(0x01, &b);
@@ -253,8 +253,8 @@ void CS42L52_t::Init() {
 
 #if 1 // ==== DMA ====
     AU_SAI_A->CR1 |= SAI_xCR1_DMAEN;
-//    dmaStreamAllocate(SAI_DMA_A, IRQ_PRIO_HIGH, DmaSAITxIrq, nullptr); XXX
-    dmaStreamSetPeripheral(SAI_DMA_A, &AU_SAI_A->DR);
+    PDmaA = dmaStreamAlloc(SAI_DMA_A, IRQ_PRIO_HIGH, DmaSAITxIrq, nullptr);
+    dmaStreamSetPeripheral(PDmaA, &AU_SAI_A->DR);
 #endif
 }
 
@@ -307,7 +307,7 @@ uint8_t CS42L52_t::SetPcmMixerVolume(int8_t Volume_dB) {
 
 #if 1 // ============================= Tx/Rx ===================================
 void CS42L52_t::SetupMonoStereo(MonoStereo_t MonoStereo) {
-    dmaStreamDisable(SAI_DMA_A);
+    dmaStreamDisable(PDmaA);
     DisableSAI();   // All settings must be changed when both blocks are disabled
     // Wait until really disabled
     while(AU_SAI_A->CR1 & SAI_xCR1_SAIEN);
@@ -328,27 +328,27 @@ void CS42L52_t::SetupSampleRate(uint32_t SampleRate) {  // Setup sample rate. No
 }
 
 void CS42L52_t::TransmitBuf(void *Buf, uint32_t Sz16) {
-    dmaStreamDisable(SAI_DMA_A);
-    dmaStreamSetMemory0(SAI_DMA_A, Buf);
-    dmaStreamSetMode(SAI_DMA_A, SAI_DMATX_MONO_MODE);
-    dmaStreamSetTransactionSize(SAI_DMA_A, Sz16);
-    dmaStreamEnable(SAI_DMA_A);
+    dmaStreamDisable(PDmaA);
+    dmaStreamSetMemory0(PDmaA, Buf);
+    dmaStreamSetMode(PDmaA, SAI_DMATX_MONO_MODE);
+    dmaStreamSetTransactionSize(PDmaA, Sz16);
+    dmaStreamEnable(PDmaA);
     EnableSAI(); // Start tx
 }
 
 bool CS42L52_t::IsTransmitting() {
-    return (SAI_DMA_A->channel->CNDTR != 0);
+    return (PDmaA->channel->CNDTR != 0);
 }
 
 void CS42L52_t::Stop() {
-    dmaStreamDisable(SAI_DMA_A);
+    dmaStreamDisable(PDmaA);
     AU_SAI_A->CR2 = SAI_xCR2_FFLUSH;
 }
 
 void CS42L52_t::StartStream() {
     DisableSAI();   // All settings must be changed when both blocks are disabled
-    dmaStreamDisable(SAI_DMA_A);
-    dmaStreamDisable(SAI_DMA_B);
+    dmaStreamDisable(PDmaA);
+    dmaStreamDisable(PDmaB);
     AU_SAI_A->CR1 &= ~(SAI_xCR1_MONO | SAI_xCR1_DMAEN); // Always stereo, no DMA
     AU_SAI_A->CR2 = SAI_xCR2_FFLUSH | SAI_FIFO_THR; // Flush FIFO
     AU_SAI_B->CR2 = SAI_xCR2_FFLUSH | SAI_FIFO_THR; // Flush FIFO

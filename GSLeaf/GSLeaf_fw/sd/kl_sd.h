@@ -9,7 +9,6 @@
 
 #include "ff.h"
 #include "ch.h"
-#include "hal.h"
 #include "kl_lib.h"
 #include "uart.h"
 

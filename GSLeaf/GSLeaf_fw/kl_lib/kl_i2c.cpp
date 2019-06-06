@@ -1,6 +1,7 @@
 #include "uart.h"
 #include "kl_i2c.h"
 
+#if defined STM32L1XX || defined STM32F2XX || defined STM32F4XX
 #define I2C_DMATX_MODE(Chnl) \
                         STM32_DMA_CR_CHSEL(Chnl) |   \
                         DMA_PRIORITY_LOW | \
@@ -8,7 +9,7 @@
                         STM32_DMA_CR_PSIZE_BYTE | \
                         STM32_DMA_CR_MINC |     /* Memory pointer increase */ \
                         STM32_DMA_CR_DIR_M2P    /* Direction is memory to peripheral */ \
-                        /* | STM32_DMA_CR_TCIE*/
+                        | STM32_DMA_CR_TCIE
 
 #define I2C_DMARX_MODE(Chnl) \
                         STM32_DMA_CR_CHSEL(Chnl) |   \
@@ -17,9 +18,8 @@
                         STM32_DMA_CR_PSIZE_BYTE | \
                         STM32_DMA_CR_MINC |         /* Memory pointer increase */ \
                         STM32_DMA_CR_DIR_P2M        /* Direction is peripheral to memory */ \
-                        /* | STM32_DMA_CR_TCIE*/
+                        | STM32_DMA_CR_TCIE
 
-#if defined STM32L1XX || defined STM32F2XX
 #if defined STM32F2XX
 #define I2C1_DMA_CHNL   1
 #define I2C2_DMA_CHNL   7
@@ -30,7 +30,7 @@
 static const i2cParams_t I2C1Params = {
         I2C1,
         I2C1_GPIO, I2C1_SCL, I2C1_SDA,
-        I2C1_BAUDRATE,
+        I2C_BAUDRATE_HZ,
         I2C1_DMA_TX,
         I2C1_DMA_RX,
         I2C_DMATX_MODE(I2C1_DMA_CHNL),
@@ -66,21 +66,21 @@ void i2c_t::Init() {
 #if I2C_USE_SEMAPHORE
     chBSemObjectInit(&BSemaphore, NOT_TAKEN);
 #endif
+    I2C_TypeDef *pi2c = PParams->pi2c;  // To make things shorter
     // ==== DMA ====
-    // Here only unchanged parameters of the DMA are configured.
-    dmaStreamAllocate(PParams->PDmaTx, IRQ_PRIO_MEDIUM, i2cDmaIrqHandler, this);
-    dmaStreamSetPeripheral(PParams->PDmaTx, &PParams->pi2c->DR);
-    dmaStreamAllocate(PParams->PDmaRx, IRQ_PRIO_MEDIUM, i2cDmaIrqHandler, this);
-    dmaStreamSetPeripheral(PParams->PDmaRx, &PParams->pi2c->DR);
+    PDmaTx = dmaStreamAlloc(PParams->DmaTxID, IRQ_PRIO_MEDIUM, i2cDmaIrqHandler, this);
+    PDmaRx = dmaStreamAlloc(PParams->DmaRxID, IRQ_PRIO_MEDIUM, i2cDmaIrqHandler, this);
+    dmaStreamSetPeripheral(PDmaTx, &pi2c->DR);
+    dmaStreamSetPeripheral(PDmaRx, &pi2c->DR);
 }
 
 void i2c_t::Standby() {
-    if(PParams->pi2c == I2C1) { rccResetI2C1(); rccDisableI2C1(FALSE); }
+    if(PParams->pi2c == I2C1) { rccResetI2C1(); rccDisableI2C1(); }
 #ifdef I2C2
-    else if(PParams->pi2c == I2C2) { rccResetI2C2(); rccDisableI2C2(FALSE); }
+    else if(PParams->pi2c == I2C2) { rccResetI2C2(); rccDisableI2C2(); }
 #endif
 #if defined I2C3
-    else if (PParams->pi2c == I2C3) { rccResetI2C3(); rccDisableI2C3(FALSE); }
+    else if (PParams->pi2c == I2C3) { rccResetI2C3(); rccDisableI2C3(); }
 #endif
     // Disable GPIOs
     PinSetupAnalog(PParams->PGpio, PParams->SclPin);
@@ -91,10 +91,8 @@ void i2c_t::Resume() {
     Error = false;
     // ==== GPIOs ====
     AlterFunc_t PinAF;
-#if defined STM32L1XX || defined STM32F2XX
+#if defined STM32L1XX || defined STM32F2XX || defined STM32F4XX
     PinAF = AF4; // for all I2Cs everywhere
-//#elif defined STM32F0XX
-//    PinAF = AF4;
 #else
 #error "I2C AF not defined"
 #endif
@@ -156,14 +154,14 @@ uint8_t i2c_t::WriteRead(uint8_t Addr,
     // Start TX DMA if needed
     if(WLength != 0) {
         if(WaitEv8() != retvOk) { Rslt = retvFail; goto WriteReadEnd; }
-        dmaStreamSetMemory0(PParams->PDmaTx, WPtr);
-        dmaStreamSetMode   (PParams->PDmaTx, PParams->DmaModeTx);
-        dmaStreamSetTransactionSize(PParams->PDmaTx, WLength);
+        dmaStreamSetMemory0(PDmaTx, WPtr);
+        dmaStreamSetMode   (PDmaTx, PParams->DmaModeTx);
+        dmaStreamSetTransactionSize(PDmaTx, WLength);
         chSysLock();
-        dmaStreamEnable(PParams->PDmaTx);
+        dmaStreamEnable(PDmaTx);
         chThdSuspendS(&ThdRef);    // Wait IRQ
         chSysUnlock();
-        dmaStreamDisable(PParams->PDmaTx);
+        dmaStreamDisable(PDmaTx);
     }
     // Read if needed
     if(RLength != 0) {
@@ -177,15 +175,15 @@ uint8_t i2c_t::WriteRead(uint8_t Addr,
         if(RLength == 1) AckDisable();
         else AckEnable();
         ClearAddrFlag();
-        dmaStreamSetMemory0(PParams->PDmaRx, RPtr);
-        dmaStreamSetMode   (PParams->PDmaRx, PParams->DmaModeRx);
-        dmaStreamSetTransactionSize(PParams->PDmaRx, RLength);
+        dmaStreamSetMemory0(PDmaRx, RPtr);
+        dmaStreamSetMode   (PDmaRx, PParams->DmaModeRx);
+        dmaStreamSetTransactionSize(PDmaRx, RLength);
         SignalLastDmaTransfer(); // Inform DMA that this is last transfer => do not ACK last byte
         chSysLock();
-        dmaStreamEnable(PParams->PDmaRx);
+        dmaStreamEnable(PDmaRx);
         chThdSuspendS(&ThdRef);    // Wait IRQ
         chSysUnlock();
-        dmaStreamDisable(PParams->PDmaRx);
+        dmaStreamDisable(PDmaRx);
     } // if != 0
     else WaitBTF(); // if nothing to read, just stop
     SendStop();
@@ -217,25 +215,25 @@ uint8_t i2c_t::WriteWrite(uint8_t Addr,
     // Start TX DMA if needed
     if(WLength1 != 0) {
         if(WaitEv8() != retvOk) { Rslt = retvFail; goto WriteWriteEnd; }
-        dmaStreamSetMemory0(PParams->PDmaTx, WPtr1);
-        dmaStreamSetMode   (PParams->PDmaTx, PParams->DmaModeTx);
-        dmaStreamSetTransactionSize(PParams->PDmaTx, WLength1);
+        dmaStreamSetMemory0(PDmaTx, WPtr1);
+        dmaStreamSetMode   (PDmaTx, PParams->DmaModeTx);
+        dmaStreamSetTransactionSize(PDmaTx, WLength1);
         chSysLock();
-        dmaStreamEnable(PParams->PDmaTx);
+        dmaStreamEnable(PDmaTx);
         chThdSuspendS(&ThdRef);    // Wait IRQ
         chSysUnlock();
-        dmaStreamDisable(PParams->PDmaTx);
+        dmaStreamDisable(PDmaTx);
     }
     if(WLength2 != 0) {
         if(WaitEv8() != retvOk) { Rslt = retvFail; goto WriteWriteEnd; }
-        dmaStreamSetMemory0(PParams->PDmaTx, WPtr2);
-        dmaStreamSetMode   (PParams->PDmaTx, PParams->DmaModeTx);
-        dmaStreamSetTransactionSize(PParams->PDmaTx, WLength2);
+        dmaStreamSetMemory0(PDmaTx, WPtr2);
+        dmaStreamSetMode   (PDmaTx, PParams->DmaModeTx);
+        dmaStreamSetTransactionSize(PDmaTx, WLength2);
         chSysLock();
-        dmaStreamEnable(PParams->PDmaTx);
+        dmaStreamEnable(PDmaTx);
         chThdSuspendS(&ThdRef);    // Wait IRQ
         chSysUnlock();
-        dmaStreamDisable(PParams->PDmaTx);
+        dmaStreamDisable(PDmaTx);
     }
     WaitBTF();
     SendStop();
@@ -295,14 +293,14 @@ uint8_t i2c_t::Write(uint8_t Addr, uint8_t *WPtr1, uint8_t WLength1) {
     // Start TX DMA if needed
     if(WLength1 != 0) {
         if(WaitEv8() != retvOk) { Rslt = retvFail; goto WriteEnd; }
-        dmaStreamSetMemory0(PParams->PDmaTx, WPtr1);
-        dmaStreamSetMode   (PParams->PDmaTx, PParams->DmaModeTx);
-        dmaStreamSetTransactionSize(PParams->PDmaTx, WLength1);
+        dmaStreamSetMemory0(PDmaTx, WPtr1);
+        dmaStreamSetMode   (PDmaTx, PParams->DmaModeTx);
+        dmaStreamSetTransactionSize(PDmaTx, WLength1);
         chSysLock();
-        dmaStreamEnable(PParams->PDmaTx);
+        dmaStreamEnable(PDmaTx);
         chThdSuspendS(&ThdRef);    // Wait IRQ
         chSysUnlock();
-        dmaStreamDisable(PParams->PDmaTx);
+        dmaStreamDisable(PDmaTx);
     }
     WaitBTF();
     SendStop();
@@ -411,6 +409,22 @@ uint8_t i2c_t::WaitBTF() {
 #endif // MCU type
 
 #if defined STM32L4XX || defined STM32F030
+#define I2C_DMATX_MODE(Chnl) \
+                        STM32_DMA_CR_CHSEL(Chnl) |   \
+                        DMA_PRIORITY_LOW | \
+                        STM32_DMA_CR_MSIZE_BYTE | \
+                        STM32_DMA_CR_PSIZE_BYTE | \
+                        STM32_DMA_CR_MINC |     /* Memory pointer increase */ \
+                        STM32_DMA_CR_DIR_M2P    /* Direction is memory to peripheral */
+
+#define I2C_DMARX_MODE(Chnl) \
+                        STM32_DMA_CR_CHSEL(Chnl) |   \
+                        DMA_PRIORITY_LOW | \
+                        STM32_DMA_CR_MSIZE_BYTE | \
+                        STM32_DMA_CR_PSIZE_BYTE | \
+                        STM32_DMA_CR_MINC |         /* Memory pointer increase */ \
+                        STM32_DMA_CR_DIR_P2M        /* Direction is peripheral to memory */
+
 
 #if 1 // ==== Inner defines ====
 #define I2C_INT_MASK    ((uint32_t)(I2C_ISR_TCR | I2C_ISR_TC | I2C_ISR_STOPF | I2C_ISR_NACKF | I2C_ISR_ADDR | I2C_ISR_RXNE | I2C_ISR_TXIS))

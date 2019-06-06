@@ -34,6 +34,7 @@ enum MonoStereo_t { Stereo, Mono };
 
 class CS42L52_t {
 private:
+    const stm32_dma_stream_t *PDmaA, *PDmaB;
     void EnableSAI() {
         AU_SAI_A->CR1 |= SAI_xCR1_SAIEN;
 #if MIC_EN

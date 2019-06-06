@@ -1,5 +1,5 @@
 /*
-    ChibiOS - Copyright (C) 2006..2015 Giovanni Di Sirio
+    ChibiOS - Copyright (C) 2006..2018 Giovanni Di Sirio
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -15,15 +15,15 @@
 */
 
 /**
- * @file    STM32/SDMMCv1/sdc_lld.h
+ * @file    SDMMCv1/hal_sdc_lld.h
  * @brief   STM32 SDC subsystem low level driver header.
  *
  * @addtogroup SDC
  * @{
  */
 
-#ifndef _SDC_LLD_H_
-#define _SDC_LLD_H_
+#ifndef HAL_SDC_LLD_H
+#define HAL_SDC_LLD_H
 
 #if HAL_USE_SDC || defined(__DOXYGEN__)
 
@@ -40,12 +40,21 @@
  * @{
  */
 /**
- * @brief   SDMMC driver enable switch.
+ * @brief   SDMMC1 driver enable switch.
  * @details If set to @p TRUE the support for SDMMC1 is included.
  * @note    The default is @p FALSE.
  */
 #if !defined(STM32_SDC_USE_SDMMC1) || defined(__DOXYGEN__)
-#define STM32_SDC_USE_SDMMC1                TRUE
+#define STM32_SDC_USE_SDMMC1                FALSE
+#endif
+
+/**
+ * @brief   SDMMC2 driver enable switch.
+ * @details If set to @p TRUE the support for SDMMC2 is included.
+ * @note    The default is @p FALSE.
+ */
+#if !defined(STM32_SDC_USE_SDMMC2) || defined(__DOXYGEN__)
+#define STM32_SDC_USE_SDMMC2                FALSE
 #endif
 
 /**
@@ -53,21 +62,29 @@
  * @note    Unaligned transfers are much slower.
  */
 #if !defined(STM32_SDC_SDMMC_UNALIGNED_SUPPORT) || defined(__DOXYGEN__)
-#define STM32_SDC_SDMMC_UNALIGNED_SUPPORT   FALSE
+#define STM32_SDC_SDMMC_UNALIGNED_SUPPORT   TRUE
+#endif
+
+/**
+ * @brief   Enable clock bypass.
+ * @note    Allow clock speed up to 50 Mhz.
+ */
+#if !defined(STM32_SDC_SDMMC_50MHZ) || defined(__DOXYGEN__)
+#define STM32_SDC_SDMMC_50MHZ               FALSE
 #endif
 
 /**
  * @brief   Write timeout in milliseconds.
  */
 #if !defined(STM32_SDC_SDMMC_WRITE_TIMEOUT) || defined(__DOXYGEN__)
-#define STM32_SDC_SDMMC_WRITE_TIMEOUT       250
+#define STM32_SDC_SDMMC_WRITE_TIMEOUT       1000
 #endif
 
 /**
  * @brief   Read timeout in milliseconds.
  */
 #if !defined(STM32_SDC_SDMMC_READ_TIMEOUT) || defined(__DOXYGEN__)
-#define STM32_SDC_SDMMC_READ_TIMEOUT        25
+#define STM32_SDC_SDMMC_READ_TIMEOUT        1000
 #endif
 
 /**
@@ -78,10 +95,24 @@
 #endif
 
 /**
+ * @brief   Card clock power saving enable.
+ */
+#if !defined(STM32_SDC_SDMMC_PWRSAV) || defined(__DOXYGEN__)
+#define STM32_SDC_SDMMC_PWRSAV              TRUE
+#endif
+
+/**
  * @brief   SDMMC1 DMA priority (0..3|lowest..highest).
  */
 #if !defined(STM32_SDC_SDMMC1_DMA_PRIORITY) || defined(__DOXYGEN__)
 #define STM32_SDC_SDMMC1_DMA_PRIORITY       3
+#endif
+
+/**
+ * @brief   SDMMC2 DMA priority (0..3|lowest..highest).
+ */
+#if !defined(STM32_SDC_SDMMC2_DMA_PRIORITY) || defined(__DOXYGEN__)
+#define STM32_SDC_SDMMC2_DMA_PRIORITY       3
 #endif
 
 /**
@@ -90,36 +121,123 @@
 #if !defined(STM32_SDC_SDMMC1_IRQ_PRIORITY) || defined(__DOXYGEN__)
 #define STM32_SDC_SDMMC1_IRQ_PRIORITY       9
 #endif
+
+/**
+ * @brief   SDMMC2 interrupt priority level setting.
+ */
+#if !defined(STM32_SDC_SDMMC2_IRQ_PRIORITY) || defined(__DOXYGEN__)
+#define STM32_SDC_SDMMC2_IRQ_PRIORITY       9
+#endif
 /** @} */
 
 /*===========================================================================*/
 /* Derived constants and error checks.                                       */
 /*===========================================================================*/
 
+/* Registry checks.*/
+#if (STM32_SDC_USE_SDMMC1 && !defined(STM32_SDMMC1_HANDLER)) ||             \
+    (STM32_SDC_USE_SDMMC2 && !defined(STM32_SDMMC2_HANDLER))
+#error "STM32_SDMMCx_HANDLER not defined in registry"
+#endif
+
+#if (STM32_SDC_USE_SDMMC1 && !defined(STM32_SDMMC1_NUMBER)) ||              \
+    (STM32_SDC_USE_SDMMC2 && !defined(STM32_SDMMC2_NUMBER))
+#error "STM32_ADCx_NUMBER not defined in registry"
+#endif
+
+#if (STM32_SDC_USE_SDMMC1 && !defined(STM32_SDC_SDMMC1_DMA_MSK)) ||         \
+    (STM32_SDC_USE_SDMMC2 && !defined(STM32_SDC_SDMMC2_DMA_MSK))
+#error "STM32_SDC_SDMMCx_DMA_MSK not defined in registry"
+#endif
+
+#if (STM32_SDC_USE_SDMMC1 && !defined(STM32_SDC_SDMMC1_DMA_CHN)) ||         \
+    (STM32_SDC_USE_SDMMC2 && !defined(STM32_SDC_SDMMC2_DMA_CHN))
+#error "STM32_SDC_SDMMCx_DMA_CHN not defined in registry"
+#endif
+
+/* Units checks.*/
 #if STM32_SDC_USE_SDMMC1 && !STM32_HAS_SDMMC1
 #error "SDMMC1 not present in the selected device"
 #endif
 
-#if !STM32_SDC_USE_SDMMC1
+#if STM32_SDC_USE_SDMMC2 && !STM32_HAS_SDMMC2
+#error "SDMMC2 not present in the selected device"
+#endif
+
+#if !STM32_SDC_USE_SDMMC1 && !STM32_SDC_USE_SDMMC2
 #error "SDC driver activated but no SDMMC peripheral assigned"
 #endif
 
-#if !OSAL_IRQ_IS_VALID_PRIORITY(STM32_SDC_SDMMC1_IRQ_PRIORITY)
-#error "Invalid IRQ priority assigned to SDIO"
+/* Clock related tests.*/
+//#if STM32_HAS_SDMMC1 && !defined(STM32_SDMMC1CLK)
+//#error "STM32_SDMMC1CLK not defined"
+//#endif
+
+/* Clock related tests.*/
+#if STM32_HAS_SDMMC2 && !defined(STM32_SDMMC2CLK)
+#error "STM32_SDMMC2CLK not defined"
 #endif
 
+//#if !defined(STM32_HCLK)
+//#error "STM32_HCLK not defined"
+//#endif
+
+#if STM32_HAS_SDMMC1 && (STM32_SDMMC1CLK * 10 > STM32_HCLK * 7)
+#error "STM32_SDMMC1CLK must not exceed STM32_HCLK * 0.7"
+#endif
+
+#if STM32_HAS_SDMMC2 && (STM32_SDMMC2CLK * 10 > STM32_HCLK * 7)
+#error "STM32_SDMMC2CLK must not exceed STM32_HCLK * 0.7"
+#endif
+
+#if STM32_HAS_SDMMC1 && (STM32_SDMMC1CLK > 48000000)
+#error "STM32_SDMMC1CLK must not exceed 48MHz"
+#endif
+
+#if STM32_HAS_SDMMC2 && (STM32_SDMMC2CLK > 48000000)
+#error "STM32_SDMMC2CLK must not exceed 48MHz"
+#endif
+
+#if defined(STM32_SDC_SDMMC_50MHZ) && STM32_SDC_SDMMC_50MHZ && !defined(STM32F7XX)
+#error "50 Mhz clock only works for STM32F7XX"
+#endif
+
+/* SDMMC IRQ priority tests.*/
+#if !OSAL_IRQ_IS_VALID_PRIORITY(STM32_SDC_SDMMC1_IRQ_PRIORITY)
+#error "Invalid IRQ priority assigned to SDMMC1"
+#endif
+
+#if !OSAL_IRQ_IS_VALID_PRIORITY(STM32_SDC_SDMMC2_IRQ_PRIORITY)
+#error "Invalid IRQ priority assigned to SDMMC2"
+#endif
+
+/* DMA priority tests.*/
 #if !STM32_DMA_IS_VALID_PRIORITY(STM32_SDC_SDMMC1_DMA_PRIORITY)
-#error "Invalid DMA priority assigned to SDIO"
+#error "Invalid DMA priority assigned to SDMMC1"
+#endif
+
+#if !STM32_DMA_IS_VALID_PRIORITY(STM32_SDC_SDMMC2_DMA_PRIORITY)
+#error "Invalid DMA priority assigned to SDMMC2"
 #endif
 
 /* Check on the presence of the DMA streams settings in mcuconf.h.*/
-#if !defined(STM32_SDC_SDMMC1_DMA_STREAM)
+#if STM32_SDC_USE_SDMMC1 && !defined(STM32_SDC_SDMMC1_DMA_STREAM)
 #error "SDMMC1 DMA streams not defined"
 #endif
 
+#if STM32_SDC_USE_SDMMC2 && !defined(STM32_SDC_SDMMC2_DMA_STREAM)
+#error "SDMMC2 DMA streams not defined"
+#endif
+
 /* Check on the validity of the assigned DMA channels.*/
-#if !STM32_DMA_IS_VALID_ID(STM32_SDC_SDMMC1_DMA_STREAM, STM32_SDC_SDMMC1_DMA_MSK)
+#if STM32_SDC_USE_SDMMC1 &&                                                 \
+    !STM32_DMA_IS_VALID_ID(STM32_SDC_SDMMC1_DMA_STREAM, STM32_SDC_SDMMC1_DMA_MSK)
 #error "invalid DMA stream associated to SDMMC1"
+#endif
+
+#if STM32_SDC_USE_SDMMC2 &&                                                 \
+    !STM32_DMA_IS_VALID_ID(STM32_SDC_SDMMC2_DMA_STREAM, STM32_SDC_SDMMC2_DMA_MSK)
+#error "invalid DMA stream associated to SDMMC2"
 #endif
 
 #if !defined(STM32_DMA_REQUIRED)
@@ -212,6 +330,14 @@ struct SDCDriver {
    */
   thread_reference_t        thread;
   /**
+   * @brief     DTIMER register value for read operations.
+   */
+  uint32_t                  rtmo;
+  /**
+   * @brief     DTIMER register value for write operations.
+   */
+  uint32_t                  wtmo;
+  /**
    * @brief     DMA mode bit mask.
    */
   uint32_t                  dmamode;
@@ -234,8 +360,12 @@ struct SDCDriver {
 /* External declarations.                                                    */
 /*===========================================================================*/
 
-#if !defined(__DOXYGEN__)
+#if STM32_SDC_USE_SDMMC1 && !defined(__DOXYGEN__)
 extern SDCDriver SDCD1;
+#endif
+
+#if STM32_SDC_USE_SDMMC2 && !defined(__DOXYGEN__)
+extern SDCDriver SDCD2;
 #endif
 
 #ifdef __cplusplus
@@ -270,6 +400,6 @@ extern "C" {
 
 #endif /* HAL_USE_SDC */
 
-#endif /* _SDC_LLD_H_ */
+#endif /* HAL_SDC_LLD_H */
 
 /** @} */

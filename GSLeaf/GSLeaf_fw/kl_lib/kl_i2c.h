@@ -2,7 +2,7 @@
 
 #include "kl_lib.h"
 
-#if defined STM32L1XX || defined STM32F2XX
+#if defined STM32L1XX || defined STM32F2XX || defined STM32F4XX
 struct i2cParams_t {
     I2C_TypeDef *pi2c;
     GPIO_TypeDef *PGpio;
@@ -10,14 +10,14 @@ struct i2cParams_t {
     uint16_t SdaPin;
     uint32_t BitrateHz;
     // DMA
-    const stm32_dma_stream_t *PDmaTx;
-    const stm32_dma_stream_t *PDmaRx;
+    uint32_t DmaTxID, DmaRxID;
     uint32_t DmaModeTx, DmaModeRx;
 };
 
 class i2c_t {
 private:
     const i2cParams_t *PParams;
+    const stm32_dma_stream_t *PDmaTx, *PDmaRx;
     void IReset();
     void SendStart()     { PParams->pi2c->CR1 |= I2C_CR1_START; }
     void SendStop()      { PParams->pi2c->CR1 |= I2C_CR1_STOP; }
