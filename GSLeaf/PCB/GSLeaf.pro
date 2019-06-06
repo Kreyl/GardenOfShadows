@@ -1,4 +1,4 @@
-update=05.06.2017 19:59:14
+update=04.06.2019 23:41:36
 version=1
 last_client=kicad
 [cvpcb]
@@ -36,19 +36,4 @@ LibDir=D:/libs/Kicad
 version=1
 [eeschema]
 version=1
-LibDir=D:/Libs/Kicad
-[eeschema/libraries]
-LibName1=Connectors_kl
-LibName2=pcb_details
-LibName3=power
-LibName4=Power_kl
-LibName5=Tittar_kl
-LibName6=st_kl
-LibName7=Transistors_kl
-LibName8=Audio_kl
-LibName9=DigitalPot
-LibName10=OpAmp_kl
-LibName11=RF ICs
-LibName12=Switches
-LibName13=Sensors
-LibName14=Antennas_kl
+LibDir=

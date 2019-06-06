@@ -9,8 +9,11 @@
 
 #include "kl_lib.h"
 
+#define MIC_EN              FALSE
+
 #define CS42_I2C_ADDR       0x4A
 #define AU_BATMON_ENABLE    TRUE
+#define AU_VA_mv            2500    // Required for battery voltage calculation
 
 enum AuBeepFreq_t {abfC4=0b0000, abfC5=0b0001, abfD5=0b0010, abfE5=0b0011, abfF5=0b0100, abfG5=0b0101, abfA5=0b0110,
     abfB5=0b0111, abfC6=0b1000, abfD6=0b1001, abfE6=0b1010, abfF6=0b1011, abfG6=0b1100, abfA6=0b1101, abfB6=0b1110, abfC7=0b1111
@@ -27,31 +30,41 @@ union SampleStereo_t {
 
 typedef int16_t SampleMono_t;
 
-enum MonoStereo_t { Stereo = 0, Mono = (1 << 12) };
+enum MonoStereo_t { Stereo, Mono };
 
 class CS42L52_t {
 private:
-    void EnableSAI() { AU_SAI_A->CR1 |= SAI_xCR1_SAIEN; AU_SAI_B->CR1 |= SAI_xCR1_SAIEN; }
-    void DisableSAI() { AU_SAI_A->CR1 &= ~SAI_xCR1_SAIEN; AU_SAI_B->CR1 &= ~SAI_xCR1_SAIEN; }
+    void EnableSAI() {
+        AU_SAI_A->CR1 |= SAI_xCR1_SAIEN;
+#if MIC_EN
+        AU_SAI_B->CR1 |= SAI_xCR1_SAIEN;
+#endif
+    }
+    void DisableSAI() {
+        AU_SAI_A->CR1 &= ~SAI_xCR1_SAIEN;
+#if MIC_EN
+        AU_SAI_B->CR1 &= ~SAI_xCR1_SAIEN;
+#endif
+    }
     int8_t IVolume = 0;
     bool IsOn;
 public:
     void Init();
     void Standby();
     void Resume();
-    u8 ReadReg(u8 RegAddr, u8 *PValue);
-    u8 WriteReg(u8 RegAddr, u8 Value);
-    u8 WriteMany(u8 StartAddr, u8 *PValues, u8 Len);
-    u8 WriteTwoTheSame(u8 StartAddr, u8 Value);
+    uint8_t ReadReg(uint8_t RegAddr, uint8_t *PValue);
+    uint8_t WriteReg(uint8_t RegAddr, uint8_t Value);
+    uint8_t WriteMany(uint8_t StartAddr, uint8_t *PValues, uint8_t Len);
+    uint8_t WriteTwoTheSame(uint8_t StartAddr, uint8_t Value);
     // Mid-level functions
-    void SetMicGain(u8 Gain);
-    u8 SetPGAGain(i8 Gain);
-    u8 SetAdcVolume(i8 Volume_dB);
-    u8 SetAdcMixerVolume(i8 Volume_dB);
-    u8 SetPcmMixerVolume(i8 Volume_dB);
+    void SetMicGain(uint8_t Gain);
+    uint8_t SetPGAGain(int8_t Gain);
+    uint8_t SetAdcVolume(int8_t Volume_dB);
+    uint8_t SetAdcMixerVolume(int8_t Volume_dB);
+    uint8_t SetPcmMixerVolume(int8_t Volume_dB);
 
-    u8 MuteAdcMixer() { return WriteTwoTheSame(0x18, 0x80); } // Set mixer mute bit
-    u8 MutePcmMixer() { return WriteTwoTheSame(0x1A, 0x80); } // Set mixer mute bit
+    uint8_t MuteAdcMixer() { return WriteTwoTheSame(0x18, 0x80); } // Set mixer mute bit
+    uint8_t MutePcmMixer() { return WriteTwoTheSame(0x1A, 0x80); } // Set mixer mute bit
 
     void SetupNoiseGate(EnableDisable_t En, uint8_t Threshold, uint8_t Delay);
 
@@ -59,9 +72,9 @@ public:
 
     // Hi-level
     void BeepSingle(AuBeepFreq_t Freq, AuBeepOnTime_t OnTime, int8_t Volume_dB);
-    u8 SetMasterVolume(i8 Volume_dB);
-    u8 SetHeadphoneVolume(i8 Volume_dB);
-    u8 SetSpeakerVolume(i8 Volume_dB);
+    uint8_t SetMasterVolume(int8_t Volume_dB);
+    uint8_t SetHeadphoneVolume(int8_t Volume_dB);
+    uint8_t SetSpeakerVolume(int8_t Volume_dB);
 
     void VolumeUp();
     void VolumeDown();
@@ -77,14 +90,16 @@ public:
     void DisableSpeakers();
 
     // Rx/Tx
-    void SetupParams(MonoStereo_t MonoStereo, uint32_t SampleRate);
-    void TransmitBuf(void *Buf, uint32_t Sz);
+    void SetupMonoStereo(MonoStereo_t MonoStereo);
+    void SetupSampleRate(uint32_t SampleRate);
+    void TransmitBuf(void *Buf, uint32_t Sz16);
+    bool IsTransmitting();
     void Stop();
 
     void StartStream();
     void PutSampleI(SampleStereo_t &Sample);
 #if AU_BATMON_ENABLE
-    u8 GetBatteryLevel(u32 *PVoltage_mV);
+    uint32_t GetBatteryVmv();
 #endif
 };
 

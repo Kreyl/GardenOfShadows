@@ -19,6 +19,15 @@ void Printf(const char *format, ...) {
     va_end(args);
 }
 
+void Printf(CmdUart_t &AUart, const char *format, ...) {
+    va_list args;
+    va_start(args, format);
+    chSysLock();
+    AUart.IVsPrintf(format, args);
+    chSysUnlock();
+    va_end(args);
+}
+
 void PrintfI(const char *format, ...) {
     va_list args;
     va_start(args, format);
@@ -37,14 +46,31 @@ void PrintfC(const char *format, ...) {
     Uart.IVsPrintf(format, args);
     va_end(args);
 }
-
-//void PrintfCNow(const char *format, ...) {
-//
-//}
-
 } // exern C
 
 
+class PrintToBuf_t : public PrintfHelper_t {
+public:
+    char *S;
+    uint8_t IPutChar(char c) {
+        *S++ = c;
+        return retvOk;
+    }
+    void IStartTransmissionIfNotYet() {}
+};
+
+char* PrintfToBuf(char* PBuf, const char *format, ...) {
+    PrintToBuf_t PtB;
+    PtB.S = PBuf;
+    va_list args;
+    va_start(args, format);
+    PtB.IVsPrintf(format, args);
+    va_end(args);
+    *PtB.S = 0;
+    return PtB.S;
+}
+
+#if 0
 void ByteShell_t::Reply(uint8_t CmdCode, uint32_t Len, uint8_t *PData) {
 //    Printf("BSendCmd %X; %u; %A\r", CmdCode, Len, PData, Len, ' ');
     // Send StartOfCmd
@@ -62,6 +88,7 @@ void ByteShell_t::Reply(uint8_t CmdCode, uint32_t Len, uint8_t *PData) {
     if(IPutChar('\n') != retvOk) return;
     IStartTransmissionIfNotYet();
 }
+#endif
 
 #if PRINTF_FLOAT_EN
 #define FLOAT_PRECISION     9

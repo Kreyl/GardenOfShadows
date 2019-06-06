@@ -7,8 +7,6 @@
 
 #pragma once
 
-#include <inttypes.h>
-
 // ==== General ====
 #define BOARD_NAME          "GSLeaf01"
 #define APP_NAME            "GSLeaf"
@@ -32,7 +30,6 @@
 #define BUTTONS_ENABLED         TRUE
 
 #define ADC_REQUIRED            FALSE
-#define STM32_DMA_REQUIRED      TRUE    // Leave this macro name for OS
 
 #if 1 // ========================== GPIO =======================================
 // EXTI
@@ -110,13 +107,6 @@
 #define CC_SPI_AF       AF5
 #endif
 
-#if 1 // ========================== USART ======================================
-#define PRINTF_FLOAT_EN FALSE
-#define CMD_UART        USART1
-#define UART_USE_INDEPENDENT_CLK    TRUE
-#define UART_TXBUF_SZ   1024
-#endif
-
 #if 1 // =========================== I2C =======================================
 // i2cclkPCLK1, i2cclkSYSCLK, i2cclkHSI
 #define I2C_CLK_SRC     i2cclkHSI
@@ -137,10 +127,12 @@
 #endif
 
 #if 1 // =========================== DMA =======================================
+#define STM32_DMA_REQUIRED  TRUE
 // ==== Uart ====
-// Remap is made automatically if required
-#define UART_DMA_TX     STM32_DMA1_STREAM4
-#define UART_DMA_RX     STM32_DMA1_STREAM5
+#define UART_DMA_TX_MODE(Chnl) (STM32_DMA_CR_CHSEL(Chnl) | DMA_PRIORITY_LOW | STM32_DMA_CR_MSIZE_BYTE | STM32_DMA_CR_PSIZE_BYTE | STM32_DMA_CR_MINC | STM32_DMA_CR_DIR_M2P | STM32_DMA_CR_TCIE)
+#define UART_DMA_RX_MODE(Chnl) (STM32_DMA_CR_CHSEL(Chnl) | DMA_PRIORITY_MEDIUM | STM32_DMA_CR_MSIZE_BYTE | STM32_DMA_CR_PSIZE_BYTE | STM32_DMA_CR_MINC | STM32_DMA_CR_DIR_P2M | STM32_DMA_CR_CIRC)
+#define UART_DMA_TX     STM32_DMA_STREAM_ID(1, 4)
+#define UART_DMA_RX     STM32_DMA_STREAM_ID(1, 5)
 #define UART_DMA_CHNL   2
 
 // ==== I2C ====
@@ -160,7 +152,7 @@
 #define SAI_DMA_CHNL    1
 
 // ==== SDMMC ====
-#define STM32_SDC_SDMMC1_DMA_STREAM   STM32_DMA_STREAM_ID(2, 5)
+//#define STM32_SDC_SDMMC1_DMA_STREAM   STM32_DMA_STREAM_ID(2, 5)
 
 #if ADC_REQUIRED
 #define ADC_DMA         STM32_DMA1_STREAM1
@@ -174,3 +166,16 @@
 #endif // ADC
 
 #endif // DMA
+
+#if 1 // ========================== USART ======================================
+#define PRINTF_FLOAT_EN FALSE
+#define UART_TXBUF_SZ   512
+#define UART_RXBUF_SZ   99
+
+#define UARTS_CNT       1
+
+#define CMD_UART_PARAMS \
+    USART1, UART_GPIO, UART_TX_PIN, UART_GPIO, UART_RX_PIN, \
+    UART_DMA_TX, UART_DMA_RX, UART_DMA_TX_MODE(UART_DMA_CHNL), UART_DMA_RX_MODE(UART_DMA_CHNL)
+
+#endif

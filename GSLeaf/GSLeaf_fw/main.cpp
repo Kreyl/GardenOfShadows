@@ -1,10 +1,3 @@
-/*
- * main.cpp
- *
- *  Created on: 20 февр. 2014 г.
- *      Author: g.kruglov
- */
-
 #include "hal.h"
 #include "MsgQ.h"
 #include "kl_i2c.h"
@@ -19,9 +12,11 @@
 #include "radio_lvl1.h"
 #include "SimpleSensors.h"
 
+#if 1 // ======================== Variables and defines ========================
 // Forever
 EvtMsgQ_t<EvtMsg_t, MAIN_EVT_Q_LEN> EvtQMain;
-extern CmdUart_t Uart;
+static const UartParams_t CmdUartParams(115200, CMD_UART_PARAMS);
+CmdUart_t Uart{&CmdUartParams};
 void OnCmd(Shell_t *PShell);
 void ITask();
 
@@ -32,38 +27,15 @@ PinOutput_t PwrEn(PWR_EN_PIN);
 CS42L52_t Audio;
 AuPlayer_t Player;
 
-#if 1 // ============================= Rx Table ================================
-class RxTable_t {
-private:
-    systime_t ITable[RCHNL_CNT];
-public:
-    void Put(int32_t Chnl) {
-        int32_t Indx = Chnl - RCHNL_MIN;
-        ITable[Indx] = chVTGetSystemTimeX();
-    }
-
-    bool EnoughTimePassed(int32_t Chnl) {
-        int32_t Indx = Chnl - RCHNL_MIN;
-//        Printf("%u\r", chVTTimeElapsedSinceX(ITable[Indx]));
-        return (chVTTimeElapsedSinceX(ITable[Indx]) >= S2ST(PAUSE_BEFORE_REPEAT_S));
-    }
-
-    RxTable_t() {
-        for(int i=0; i<RCHNL_CNT; i++) ITable[i] = 0;
-    }
-} RxTable;
-#endif
-
-#define ID_SURROUND         -1
-#define DIRNAME_SURROUND    "Surround"
-int32_t IdPlayingNow = ID_SURROUND, IdPlayNext = ID_SURROUND;
+//int32_t IdPlayingNow = ID_SURROUND, IdPlayNext = ID_SURROUND;
 static char DirName[18];
 
 TmrKL_t tmrPauseAfter {evtIdPauseEnds, tktOneShot};
+#endif
 
 int main(void) {
     // ==== Setup clock frequency ====
-    Clk.SetHiPerfMode();
+//    Clk.SetHiPerfMode();
     Clk.UpdateFreqValues();
 
     // Init OS
@@ -71,30 +43,30 @@ int main(void) {
     chSysInit();
     // ==== Init hardware ====
     EvtQMain.Init();
-    Uart.Init(115200);
-    Printf("\r%S %S\r\n", APP_NAME, BUILD_TIME);
+    Uart.Init();
+    Printf("\r%S %S\r\n", APP_NAME, XSTRINGIFY(BUILD_TIME));
     Clk.PrintFreqs();
 
-    Clk.Select48MhzSrc(src48PllQ);
+//    Clk.Select48MhzSrc(src48PllQ);
 
-    Led.Init();
+//    Led.Init();
 
     PwrEn.Init();
     PwrEn.SetLo();
     chThdSleepMilliseconds(18);
 
     // Audio
-    i2c1.Init();
-    Audio.Init();
-    Audio.SetSpeakerVolume(-96);    // To remove speaker pop at power on
-    Audio.DisableSpeakers();
-    Audio.EnableHeadphones();
+//    i2c1.Init();
+//    Audio.Init();
+//    Audio.SetSpeakerVolume(-96);    // To remove speaker pop at power on
+//    Audio.DisableSpeakers();
+//    Audio.EnableHeadphones();
 
 //    i2c1.ScanBus();
-    Acc.Init();
+//    Acc.Init();
 
-    SD.Init();
-    Player.Init();
+//    SD.Init();
+//    Player.Init();
 
 //    Audio.SetSpeakerVolume(0);
 //    Audio.Standby();
@@ -105,7 +77,7 @@ int main(void) {
     SimpleSensors::Init();
 
     // Start playing surround music
-    Player.PlayRandomFileFromDir(DIRNAME_SURROUND);
+//    Player.PlayRandomFileFromDir(DIRNAME_SURROUND);
 
     // Main cycle
     ITask();
@@ -122,26 +94,26 @@ void ITask() {
                 break;
 
             case evtIdOnRx: {
-                int32_t rxID = Msg.Value;
-                if(IdPlayingNow == ID_SURROUND) {
-                    if(RxTable.EnoughTimePassed(rxID)) {
-                        // Fadeout surround and play rcvd id
-                        IdPlayNext = rxID;
-                        Player.FadeOut();
-                    }
-                }
-                else { // Playing some ID
-                    if(rxID != IdPlayingNow) {  // Some new ID received
-                        // Switch to new ID if current one is offline for enough time
-                        if(RxTable.EnoughTimePassed(IdPlayingNow)) {
-                            // Fadeout current and play rcvd id
-                            IdPlayNext = rxID;
-                            Player.FadeOut();
-                        }
-                    }
-                }
-                // Put timestamp to table
-                RxTable.Put(rxID);
+//                int32_t rxID = Msg.Value;
+//                if(IdPlayingNow == ID_SURROUND) {
+//                    if(RxTable.EnoughTimePassed(rxID)) {
+//                        // Fadeout surround and play rcvd id
+//                        IdPlayNext = rxID;
+//                        Player.FadeOut();
+//                    }
+//                }
+//                else { // Playing some ID
+//                    if(rxID != IdPlayingNow) {  // Some new ID received
+//                        // Switch to new ID if current one is offline for enough time
+//                        if(RxTable.EnoughTimePassed(IdPlayingNow)) {
+//                            // Fadeout current and play rcvd id
+//                            IdPlayNext = rxID;
+//                            Player.FadeOut();
+//                        }
+//                    }
+//                }
+//                // Put timestamp to table
+//                RxTable.Put(rxID);
             } break;
 
 //            case evtIdAcc:
@@ -161,20 +133,20 @@ void ITask() {
 //                break;
 
             case evtIdPlayEnd: {
-                Printf("PlayEnd\r");
-                IdPlayingNow = IdPlayNext;
-                IdPlayNext = ID_SURROUND;
-                // Decide what to play: surround or some id
-                if(IdPlayingNow == ID_SURROUND) strcpy(DirName, DIRNAME_SURROUND);
-                else itoa(IdPlayingNow, DirName, 10);
-//                Printf("Play %S\r", DirName);
-                Player.PlayRandomFileFromDir(DirName);
+//                Printf("PlayEnd\r");
+//                IdPlayingNow = IdPlayNext;
+//                IdPlayNext = ID_SURROUND;
+//                // Decide what to play: surround or some id
+//                if(IdPlayingNow == ID_SURROUND) strcpy(DirName, DIRNAME_SURROUND);
+//                else itoa(IdPlayingNow, DirName, 10);
+////                Printf("Play %S\r", DirName);
+//                Player.PlayRandomFileFromDir(DirName);
             } break;
 
             case evtIdButtons:
-                Printf("Btn %u\r", Msg.BtnEvtInfo.BtnID);
-                if(Msg.BtnEvtInfo.BtnID == 0) Audio.VolumeUp();
-                else Audio.VolumeDown();
+//                Printf("Btn %u\r", Msg.BtnEvtInfo.BtnID);
+//                if(Msg.BtnEvtInfo.BtnID == 0) Audio.VolumeUp();
+//                else Audio.VolumeDown();
                 break;
 
             default: break;
