@@ -698,8 +698,8 @@ uint8_t i2c_t::WriteRead(uint32_t Addr, uint8_t *WPtr, uint32_t WLength, uint8_t
     else IState = istWrite;  // Nothing to read
 
     pi2c->CR2 = (Addr << 1) | (WLength << 16);
-    dmaStreamEnable(PDmaTx);   // Enable TX DMA
     chSysLock();
+    dmaStreamEnable(PDmaTx);   // Enable TX DMA
     // Enable IRQs: TX completed, error, NAck
     pi2c->CR1 |= (I2C_CR1_TCIE | I2C_CR1_ERRIE | I2C_CR1_NACKIE);
     pi2c->CR2 |= I2C_CR2_START;         // Start transmission

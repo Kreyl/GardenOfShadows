@@ -24,19 +24,21 @@ void ITask();
 
 LedRGB_t Led { LED_RED_CH, LED_GREEN_CH, LED_BLUE_CH };
 PinOutput_t PwrEn(PWR_EN_PIN);
-CS42L52_t Audio;
-AuPlayer_t Player;
-
-//int32_t IdPlayingNow = ID_SURROUND, IdPlayNext = ID_SURROUND;
-//static char DirName[18];
+CS42L52_t Codec;
 
 TmrKL_t tmrPauseAfter {evtIdPauseEnds, tktOneShot};
 #endif
 
 int main(void) {
     // ==== Setup clock frequency ====
-//    Clk.SetHiPerfMode();
+    Clk.SetCoreClk(cclk24MHz);
     Clk.UpdateFreqValues();
+    // 48 MHz Clock
+    Clk.EnablePLLQOut();
+    Clk.Select48MHzClk(src48PllQ);
+    // SAI clock
+    Clk.EnablePLLPOut();
+    Clk.SelectSAI1Clk(srcSaiPllP);
 
     // Init OS
     halInit();
@@ -47,8 +49,6 @@ int main(void) {
     Printf("\r%S %S\r\n", APP_NAME, XSTRINGIFY(BUILD_TIME));
     Clk.PrintFreqs();
 
-//    Clk.Select48MhzSrc(src48PllQ);
-
 //    Led.Init();
 
     PwrEn.Init();
@@ -57,19 +57,21 @@ int main(void) {
 
     // Audio
     i2c1.Init();
-    Audio.Init();
-//    Audio.SetSpeakerVolume(-96);    // To remove speaker pop at power on
-//    Audio.DisableSpeakers();
-//    Audio.EnableHeadphones();
+    Codec.Init();
+    Codec.SetSpeakerVolume(-96);    // To remove speaker pop at power on
+    Codec.DisableHeadphones();
+    Codec.EnableSpeakerMono();
+    Codec.SetupMonoStereo(Stereo); // Always
+    // Decoder
+    Player.Init();
 
 //    i2c1.ScanBus();
 //    Acc.Init();
 
-//    SD.Init();
-//    Player.Init();
+    SD.Init();
 
-//    Audio.SetSpeakerVolume(0);
-//    Audio.Standby();
+    Codec.SetSpeakerVolume(0);
+//    Codec.Standby();
 
 //    if(Radio.Init() == retvOk) Led.StartOrRestart(lsqStart);
 //    else Led.StartOrRestart(lsqFailure);
@@ -78,6 +80,8 @@ int main(void) {
 
     // Start playing surround music
 //    Player.PlayRandomFileFromDir(DIRNAME_SURROUND);
+
+    Player.Play("alive.wav", spmSingle);
 
     // Main cycle
     ITask();

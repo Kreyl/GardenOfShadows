@@ -60,7 +60,7 @@
 #define AU_SDIN         GPIOC, 3, omPushPull, pudNone, AF13 // MOSI; SAI1_A
 #define AU_SDOUT        GPIOB, 5, omPushPull, pudNone, AF13 // MISO; SAI1_B
 #define AU_MCLK         GPIOB, 8, omPushPull, pudNone, AF13
-#define AU_MCLK_TIM     { GPIOB, 8, TIM4, 3, invNotInverted, omPushPull, 1 }
+#define AU_MCLK_TIM     GPIOB, 8, TIM4, 3, invNotInverted, omPushPull, 1
 #define AU_LRCK         GPIOB, 9, omPushPull, pudNone, AF13
 #define AU_SCLK         GPIOB, 10, omPushPull, pudNone, AF13
 #define AU_i2c          i2c1

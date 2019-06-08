@@ -1884,6 +1884,7 @@ enum AHBDiv_t {
 enum APBDiv_t {apbDiv1=0b000, apbDiv2=0b100, apbDiv4=0b101, apbDiv8=0b110, apbDiv16=0b111};
 enum MCUVoltRange_t {mvrHiPerf, mvrLoPerf};
 enum Src48MHz_t { src48None = 0b00, src48PllSai1Q = 0b01, src48PllQ = 0b10, src48Msi = 0b11 };
+enum SrcSaiClk_t { srcSaiPllSai1P = 0b00, srcSaiPllSai2P = 0b01, srcSaiPllP = 0b10, srcSaiExt = 0b11 };
 enum PllSrc_t { pllsrcNone = 0b00, pllsrcMsi = 0b01, pllsrcHsi16 = 0b10, pllsrcHse = 0b11 };
 
 enum McoSrc_t {mcoNone=0b0000, mcoSYSCLK=0b0001, mcoMSI=0b0010, mcoHSI16=0b0011, mcoHSE=0b0100, mcoMainPLL=0b0101, mcoLSI=0b0110, mcoLSE=0b0111 };
@@ -1896,9 +1897,6 @@ class Clk_t {
 private:
     uint8_t EnableHSE();
     uint8_t EnablePLL();
-    void EnablePLLROut() { RCC->PLLCFGR |= RCC_PLLCFGR_PLLREN; }
-    void EnablePLLQOut() { RCC->PLLCFGR |= RCC_PLLCFGR_PLLQEN; }
-
     uint8_t EnableSai1();
 public:
     // Frequency values
@@ -1929,6 +1927,11 @@ public:
     void SetupPllSrc(PllSrc_t Src) { MODIFY_REG(RCC->PLLCFGR, RCC_PLLCFGR_PLLSRC, ((uint32_t)Src)); }
     uint8_t SetupPllMulDiv(uint32_t M, uint32_t N, uint32_t R, uint32_t Q);
     void SetupPllSai1(uint32_t N, uint32_t R, uint32_t Q, uint32_t P);
+
+    void EnablePLLROut() { RCC->PLLCFGR |= RCC_PLLCFGR_PLLREN; }
+    void EnablePLLQOut() { RCC->PLLCFGR |= RCC_PLLCFGR_PLLQEN; }
+    void EnablePLLPOut() { RCC->PLLCFGR |= RCC_PLLCFGR_PLLPEN; }
+
     void EnableSai1ROut() { SET_BIT(RCC->PLLSAI1CFGR, RCC_PLLSAI1CFGR_PLLSAI1REN); }
     void EnableSai1QOut() { SET_BIT(RCC->PLLSAI1CFGR, RCC_PLLSAI1CFGR_PLLSAI1QEN); }
     void EnableSai1POut() { SET_BIT(RCC->PLLSAI1CFGR, RCC_PLLSAI1CFGR_PLLSAI1PEN); }
@@ -1938,6 +1941,27 @@ public:
     void SetupFlashLatency(uint8_t AHBClk_MHz, MCUVoltRange_t VoltRange);
     void SetVoltageRange(MCUVoltRange_t VoltRange);
     void SetupSai1Qas48MhzSrc();
+
+    // Clock select
+    void Select48MHzClk(Src48MHz_t ASrc) {
+        uint32_t tmp = RCC->CCIPR;
+        tmp &= ~RCC_CCIPR_CLK48SEL;
+        tmp |= ((uint32_t)ASrc) << 26;
+        RCC->CCIPR = tmp;
+    }
+    void SelectSAI1Clk(SrcSaiClk_t ASrc) {
+        uint32_t tmp = RCC->CCIPR;
+        tmp &= ~RCC_CCIPR_SAI1SEL;
+        tmp |= ((uint32_t)ASrc) << 22;
+        RCC->CCIPR = tmp;
+    }
+    void SelectSAI2Clk(SrcSaiClk_t ASrc) {
+        uint32_t tmp = RCC->CCIPR;
+        tmp &= ~RCC_CCIPR_SAI2SEL;
+        tmp |= ((uint32_t)ASrc) << 24;
+        RCC->CCIPR = tmp;
+    }
+
     // LSI
     void EnableLSI() {
         RCC->CSR |= RCC_CSR_LSION;

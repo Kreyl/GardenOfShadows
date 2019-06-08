@@ -150,6 +150,8 @@ void AuOnNewSampleI(SampleStereo_t &Sample) { }
 //                        STM32_DMA_CR_TCIE           /* Enable Transmission Complete IRQ */
 #endif
 
+const PinOutputPWM_t MClk(AU_MCLK_TIM);
+
 // DMA Tx Completed IRQ
 extern "C"
 void DmaSAITxIrq(void *p, uint32_t flags);
@@ -159,10 +161,8 @@ void CS42L52_t::Init() {
     // Remove reset
     PinRst.SetHi();
     chThdSleepMilliseconds(18);
-    // Init i2c
-    AU_i2c.Init();
     AU_i2c.CheckAddress(0x4A); // Otherwise it does not work.
-    AU_i2c.ScanBus();
+//    AU_i2c.ScanBus();
     // Check if connected
     uint8_t b;
     uint8_t r = ReadReg(0x01, &b);
@@ -217,16 +217,20 @@ void CS42L52_t::Init() {
 #endif // Setup regs
 #if 1 // ======= Setup SAI =======
     // === Clock ===
-    Clk.EnableMCO(mcoHSE, mcoDiv1); // Master clock output
+//    Clk.EnableMCO(mcoHSE, mcoDiv1); // Master clock output
     AU_SAI_RccEn();
     // Clock Src: PLL SAI1 P
-    Clk.EnableSai1POut();
-    MODIFY_REG(RCC->CCIPR, RCC_CCIPR_SAI1SEL, 0);
+//    Clk.SetupPllSai1(19, 2, 7);
+//    Clk.EnableSai1POut();
+//    MODIFY_REG(RCC->CCIPR, RCC_CCIPR_SAI1SEL, 0);
 
     // === GPIOs ===
     PinSetupAlterFunc(AU_LRCK); // Left/Right (Frame sync) clock output
     PinSetupAlterFunc(AU_SCLK); // Bit clock output
     PinSetupAlterFunc(AU_SDIN); // SAI_A is Slave Transmitter
+
+    MClk.Init();
+    MClk.Set(1);
 
     DisableSAI();   // All settings must be changed when both blocks are disabled
     // Sync setup: SaiA async, SaiB sync
