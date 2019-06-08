@@ -219,8 +219,15 @@ const LedRGBChunk_t lsqCharging[] = {
         {csGoto, 0}
 };
 
-const LedRGBChunk_t lsqOperational[] = {
-        {csSetup, 90, {0, 2, 0}},
+const LedRGBChunk_t lsqIdle[] = {
+        {csSetup, 90, {99, 99, 0}},
+        {csEnd}
+};
+
+const LedRGBChunk_t lsqClosed[] = {
+        {csSetup, 90, {255, 0, 0}},
+        {csWait, 3600},
+        {csSetup, 90, {99, 99, 0}},
         {csEnd}
 };
 

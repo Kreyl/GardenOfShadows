@@ -11,7 +11,6 @@
 #include "kl_fs_utils.h"
 //#include "radio_lvl1.h"
 #include "SimpleSensors.h"
-#include "kl_json.h"
 #include "main.h"
 
 #if 1 // ======================== Variables and defines ========================
@@ -27,11 +26,11 @@ void ITask();
 LedRGB_t Led { LED_RED_CH, LED_GREEN_CH, LED_BLUE_CH };
 PinOutput_t PwrEn(PWR_EN_PIN);
 CS42L52_t Codec;
-Settings_t Settings;
+State_t State = stateClosed;
 
-//TmrKL_t tmrPauseAfter {evtIdPauseEnds, tktOneShot};
-TmrKL_t tmrIdleSnd {evtIdIdleSnd, tktOneShot};
-void StartIdleTmr();
+TmrKL_t tmrOpen {TIME_S2I(11), evtIdDoorIsClosing, tktOneShot};
+DirList_t DirList;
+static char FName[MAX_NAME_LEN];
 #endif
 
 int main(void) {
@@ -54,7 +53,7 @@ int main(void) {
     Printf("\r%S %S\r\n", APP_NAME, XSTRINGIFY(BUILD_TIME));
     Clk.PrintFreqs();
 
-//    Led.Init();
+    Led.Init();
 
     PwrEn.Init();
     PwrEn.SetLo();
@@ -74,7 +73,6 @@ int main(void) {
 //    Acc.Init();
 
     SD.Init();
-    Settings.Load();
 
     Codec.SetSpeakerVolume(0);
 //    Codec.Standby();
@@ -89,7 +87,7 @@ int main(void) {
 
 //    Player.Play("alive.wav", spmSingle);
 
-    StartIdleTmr();
+    Led.StartOrRestart(lsqIdle);
 
     // Main cycle
     ITask();
@@ -144,9 +142,36 @@ void ITask() {
 //                }
 //                break;
 
-            case evtIdIdleSnd:
-
+#if 1 // ==== Logic ====
+            case evtIdSns:
+                Printf("Sns, %u\r", State);
+                if(State == stateClosed) {
+                    if(DirList.GetRandomFnameFromDir(DIRNAME_SND_CLOSED, FName) == retvOk) {
+                        Player.Play(FName, spmSingle);
+                    }
+                    Led.StartOrRestart(lsqClosed);
+                }
+                else {
+                    if(DirList.GetRandomFnameFromDir(DIRNAME_SND_OPEN, FName) == retvOk) {
+                        Player.Play(FName, spmSingle);
+                    }
+                    // Close the door
+                    tmrOpen.Stop();
+                    State = stateClosed;
+                }
                 break;
+
+            case evtIdDoorIsClosing:
+                Printf("Closing\r");
+                State = stateClosed;
+                break;
+
+            case evtIdOpen:
+                Printf("Open\r");
+                State = stateOpen;
+                tmrOpen.StartOrRestart();
+                break;
+#endif
 
             case evtIdSoundPlayStop: {
                 Printf("PlayEnd\r");
@@ -170,13 +195,6 @@ void ITask() {
     } // while true
 }
 
-void StartIdleTmr() {
-    // Calculate random time
-    sysinterval_t Delay = Random::Generate(Settings.Idle.SndPeriod.Min_s, Settings.Idle.SndPeriod.Max_s);
-    tmrIdleSnd.StartOrRestart(Delay);
-}
-
-
 //void OnRadioRx(uint8_t AID, int8_t Rssi) {
 //    Printf("Rx %u %d\r", AID, Rssi);
 //    if(AID < RCHNL_MIN or AID > RCHNL_MAX) return;
@@ -191,28 +209,10 @@ void ProcessChargePin(PinSnsState_t *PState, uint32_t Len) {
         Printf("Charge started\r");
     }
     if(*PState == pssRising) { // Charge ended
-        Led.StartOrContinue(lsqOperational);
+//        Led.StartOrContinue(lsqOperational);
         Printf("Charge ended\r");
     }
 }
-
-void Settings_t::Load() {
-    JsonParser_t *PJParser = new JsonParser_t;
-    bool IsOk = true;
-    if(PJParser->StartReadFromFile("Settings.ini") == retvOk) {
-        JsonObj_t &Root = PJParser->Root;
-        if(Root["Idle"]["Color"].ToColor(&Idle.Clr) != retvOk) IsOk = false;
-        if(Root["Idle"]["SoundPeriod"]["Min"].ToUint(&Idle.SndPeriod.Min_s) != retvOk) IsOk = false;
-        if(Root["Idle"]["SoundPeriod"]["Max"].ToUint(&Idle.SndPeriod.Max_s) != retvOk) IsOk = false;
-        if(Root["Signal"]["Color"].ToColor(&Signal.Flash.Clr) != retvOk) IsOk = false;
-        if(Root["Signal"]["Duration"].ToUint(&Signal.Flash.Duration_s) != retvOk) IsOk = false;
-    }
-    else IsOk = false;
-    if(IsOk) Printf("Settings loaded\r");
-    else Printf("Settings load error\r");
-    delete PJParser;
-}
-
 
 #if 1 // ======================= Command processing ============================
 void OnCmd(Shell_t *PShell) {
@@ -222,6 +222,14 @@ void OnCmd(Shell_t *PShell) {
     // Handle command
     if(PCmd->NameIs("Ping")) PShell->Ack(retvOk);
     else if(PCmd->NameIs("Version")) PShell->Print("%S %S\r", APP_NAME, XSTRINGIFY(BUILD_TIME));
+
+    else if(PCmd->NameIs("s")) {
+        EvtQMain.SendNowOrExit(EvtMsg_t(evtIdSns));
+    }
+
+    else if(PCmd->NameIs("o")) {
+        EvtQMain.SendNowOrExit(EvtMsg_t(evtIdOpen));
+    }
 
 //    else if(PCmd->NameIs("V")) {
 //        int8_t v;

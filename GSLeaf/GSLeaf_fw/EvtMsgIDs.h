@@ -13,5 +13,7 @@ enum EvtMsgId_t {
 
     evtIdSoundPlayStop,
 
-    evtIdIdleSnd,
+    evtIdSns,
+    evtIdOpen,
+    evtIdDoorIsClosing,
 };

@@ -2,23 +2,9 @@
 
 #include "color.h"
 
-#define IDLESND_DIRNAME     "IdleSnd"
-#define SIGNAL_DIRNAME      "SignalSnd"
+#define DIRNAME_SND_OPEN    "SndOpen"
+#define DIRNAME_SND_CLOSED  "SndClosed"
+#define OPEN_DURATION_S     7
 
-class Settings_t {
-public:
-    struct {
-        struct {
-            uint32_t Max_s = 12, Min_s = 4;
-        } SndPeriod;
-        Color_t Clr = clBlue;
-    } Idle;
-
-    struct {
-        struct {
-            Color_t Clr = clYellow;
-            uint32_t Duration_s = 1;
-        } Flash;
-    } Signal;
-    void Load();
-};
+enum State_t { stateClosed, stateOpen };
+extern State_t State;
