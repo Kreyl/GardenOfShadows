@@ -9,7 +9,7 @@
 #include "AuPlayer.h"
 #include "acc_mma8452.h"
 #include "kl_fs_utils.h"
-//#include "radio_lvl1.h"
+#include "radio_lvl1.h"
 #include "SimpleSensors.h"
 #include "main.h"
 
@@ -68,26 +68,22 @@ int main(void) {
     Codec.SetupMonoStereo(Stereo); // Always
     // Decoder
     Player.Init();
+    Codec.Standby();
+    Codec.SetSpeakerVolume(0);
 
 //    i2c1.ScanBus();
 //    Acc.Init();
 
     SD.Init();
 
-    Codec.SetSpeakerVolume(0);
-//    Codec.Standby();
-
-//    if(Radio.Init() == retvOk) Led.StartOrRestart(lsqStart);
-//    else Led.StartOrRestart(lsqFailure);
-
-//    SimpleSensors::Init();
-
-    // Start playing surround music
-//    Player.PlayRandomFileFromDir(DIRNAME_SURROUND);
+    if(Radio.Init() == retvOk) Led.StartOrRestart(lsqStart);
+    else Led.StartOrRestart(lsqFailure);
+    chThdSleepSeconds(1);
 
 //    Player.Play("alive.wav", spmSingle);
 
     Led.StartOrRestart(lsqIdle);
+//    SimpleSensors::Init();
 
     // Main cycle
     ITask();
@@ -147,12 +143,14 @@ void ITask() {
                 Printf("Sns, %u\r", State);
                 if(State == stateClosed) {
                     if(DirList.GetRandomFnameFromDir(DIRNAME_SND_CLOSED, FName) == retvOk) {
+                        Codec.Resume();
                         Player.Play(FName, spmSingle);
                     }
                     Led.StartOrRestart(lsqClosed);
                 }
                 else {
                     if(DirList.GetRandomFnameFromDir(DIRNAME_SND_OPEN, FName) == retvOk) {
+                        Codec.Resume();
                         Player.Play(FName, spmSingle);
                     }
                     // Close the door
@@ -175,6 +173,7 @@ void ITask() {
 
             case evtIdSoundPlayStop: {
                 Printf("PlayEnd\r");
+                Codec.Standby();
 //                IdPlayingNow = IdPlayNext;
 //                IdPlayNext = ID_SURROUND;
 //                // Decide what to play: surround or some id
