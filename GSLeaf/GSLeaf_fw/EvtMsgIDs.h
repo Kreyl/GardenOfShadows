@@ -9,9 +9,9 @@ enum EvtMsgId_t {
 
     evtIdButtons,
     evtIdAcc,
-    evtIdPlayEnd,
-    evtIdPauseEnds,
     evtIdOnRx,
 
     evtIdSoundPlayStop,
+
+    evtIdIdleSnd,
 };

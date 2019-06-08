@@ -9,6 +9,7 @@
 
 #include "ff.h"
 #include "ch.h"
+#include "hal.h"
 #include "kl_lib.h"
 #include "uart.h"
 
@@ -22,6 +23,7 @@ public:
     void Init();
     void Standby();
     void Resume();
+    uint8_t Reconnect();
 };
 
 extern sd_t SD;

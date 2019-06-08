@@ -11,6 +11,8 @@
 #include "kl_fs_utils.h"
 //#include "radio_lvl1.h"
 #include "SimpleSensors.h"
+#include "kl_json.h"
+#include "main.h"
 
 #if 1 // ======================== Variables and defines ========================
 // Forever
@@ -25,8 +27,11 @@ void ITask();
 LedRGB_t Led { LED_RED_CH, LED_GREEN_CH, LED_BLUE_CH };
 PinOutput_t PwrEn(PWR_EN_PIN);
 CS42L52_t Codec;
+Settings_t Settings;
 
-TmrKL_t tmrPauseAfter {evtIdPauseEnds, tktOneShot};
+//TmrKL_t tmrPauseAfter {evtIdPauseEnds, tktOneShot};
+TmrKL_t tmrIdleSnd {evtIdIdleSnd, tktOneShot};
+void StartIdleTmr();
 #endif
 
 int main(void) {
@@ -69,6 +74,7 @@ int main(void) {
 //    Acc.Init();
 
     SD.Init();
+    Settings.Load();
 
     Codec.SetSpeakerVolume(0);
 //    Codec.Standby();
@@ -81,7 +87,9 @@ int main(void) {
     // Start playing surround music
 //    Player.PlayRandomFileFromDir(DIRNAME_SURROUND);
 
-    Player.Play("alive.wav", spmSingle);
+//    Player.Play("alive.wav", spmSingle);
+
+    StartIdleTmr();
 
     // Main cycle
     ITask();
@@ -136,8 +144,12 @@ void ITask() {
 //                }
 //                break;
 
-            case evtIdPlayEnd: {
-//                Printf("PlayEnd\r");
+            case evtIdIdleSnd:
+
+                break;
+
+            case evtIdSoundPlayStop: {
+                Printf("PlayEnd\r");
 //                IdPlayingNow = IdPlayNext;
 //                IdPlayNext = ID_SURROUND;
 //                // Decide what to play: surround or some id
@@ -158,6 +170,13 @@ void ITask() {
     } // while true
 }
 
+void StartIdleTmr() {
+    // Calculate random time
+    sysinterval_t Delay = Random::Generate(Settings.Idle.SndPeriod.Min_s, Settings.Idle.SndPeriod.Max_s);
+    tmrIdleSnd.StartOrRestart(Delay);
+}
+
+
 //void OnRadioRx(uint8_t AID, int8_t Rssi) {
 //    Printf("Rx %u %d\r", AID, Rssi);
 //    if(AID < RCHNL_MIN or AID > RCHNL_MAX) return;
@@ -176,6 +195,24 @@ void ProcessChargePin(PinSnsState_t *PState, uint32_t Len) {
         Printf("Charge ended\r");
     }
 }
+
+void Settings_t::Load() {
+    JsonParser_t *PJParser = new JsonParser_t;
+    bool IsOk = true;
+    if(PJParser->StartReadFromFile("Settings.ini") == retvOk) {
+        JsonObj_t &Root = PJParser->Root;
+        if(Root["Idle"]["Color"].ToColor(&Idle.Clr) != retvOk) IsOk = false;
+        if(Root["Idle"]["SoundPeriod"]["Min"].ToUint(&Idle.SndPeriod.Min_s) != retvOk) IsOk = false;
+        if(Root["Idle"]["SoundPeriod"]["Max"].ToUint(&Idle.SndPeriod.Max_s) != retvOk) IsOk = false;
+        if(Root["Signal"]["Color"].ToColor(&Signal.Flash.Clr) != retvOk) IsOk = false;
+        if(Root["Signal"]["Duration"].ToUint(&Signal.Flash.Duration_s) != retvOk) IsOk = false;
+    }
+    else IsOk = false;
+    if(IsOk) Printf("Settings loaded\r");
+    else Printf("Settings load error\r");
+    delete PJParser;
+}
+
 
 #if 1 // ======================= Command processing ============================
 void OnCmd(Shell_t *PShell) {
