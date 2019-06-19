@@ -46,9 +46,9 @@
 #define UART_AF         AF7 // for all USARTs
 
 // RGB LED
-#define LED_RED_CH      { GPIOB, 0, TIM3, 3, invNotInverted, omPushPull, 255 }
+#define LED_RED_CH      { GPIOB, 4, TIM3, 1, invNotInverted, omPushPull, 255 }
 #define LED_GREEN_CH    { GPIOB, 1, TIM3, 4, invNotInverted, omPushPull, 255 }
-#define LED_BLUE_CH     { GPIOB, 4, TIM3, 1, invNotInverted, omPushPull, 255 }
+#define LED_BLUE_CH     { GPIOB, 0, TIM3, 3, invNotInverted, omPushPull, 255 }
 
 // PWR_EN
 #define PWR_EN_PIN      GPIOA, 15, omPushPull

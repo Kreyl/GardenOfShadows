@@ -54,6 +54,7 @@ int main(void) {
     Clk.PrintFreqs();
 
     Led.Init();
+//    Led.SetColor(clRed);
 
     PwrEn.Init();
     PwrEn.SetLo();
@@ -66,10 +67,9 @@ int main(void) {
     Codec.DisableHeadphones();
     Codec.EnableSpeakerMono();
     Codec.SetupMonoStereo(Stereo); // Always
+    Codec.Standby();
     // Decoder
     Player.Init();
-    Codec.Standby();
-    Codec.SetSpeakerVolume(0);
 
 //    i2c1.ScanBus();
 //    Acc.Init();
@@ -80,10 +80,13 @@ int main(void) {
     else Led.StartOrRestart(lsqFailure);
     chThdSleepSeconds(1);
 
-//    Player.Play("alive.wav", spmSingle);
+    Codec.SetSpeakerVolume(0);
+    Codec.SetMasterVolume(9);
+    Codec.Resume();
+    Player.Play("alive.wav", spmSingle);
 
     Led.StartOrRestart(lsqIdle);
-//    SimpleSensors::Init();
+    SimpleSensors::Init();
 
     // Main cycle
     ITask();
@@ -144,6 +147,7 @@ void ITask() {
                 if(State == stateClosed) {
                     if(DirList.GetRandomFnameFromDir(DIRNAME_SND_CLOSED, FName) == retvOk) {
                         Codec.Resume();
+                        Codec.SetMasterVolume(9);
                         Player.Play(FName, spmSingle);
                     }
                     Led.StartOrRestart(lsqClosed);
@@ -194,24 +198,23 @@ void ITask() {
     } // while true
 }
 
-//void OnRadioRx(uint8_t AID, int8_t Rssi) {
-//    Printf("Rx %u %d\r", AID, Rssi);
-//    if(AID < RCHNL_MIN or AID > RCHNL_MAX) return;
-//    // Inform main thread
-//    EvtMsg_t Msg(evtIdOnRx, (int32_t)AID);
-//    EvtQMain.SendNowOrExit(Msg);
-//}
-
-void ProcessChargePin(PinSnsState_t *PState, uint32_t Len) {
-    if(*PState == pssFalling) { // Charge started
-        Led.StartOrContinue(lsqCharging);
-        Printf("Charge started\r");
+void ProcessSns(PinSnsState_t *PState, uint32_t Len) {
+    if(*PState == pssRising) {
+        EvtQMain.SendNowOrExit(EvtMsg_t(evtIdSns));
     }
-    if(*PState == pssRising) { // Charge ended
-//        Led.StartOrContinue(lsqOperational);
-        Printf("Charge ended\r");
-    }
+    Printf("st: %u\r", *PState);
 }
+
+//void ProcessChargePin(PinSnsState_t *PState, uint32_t Len) {
+//    if(*PState == pssFalling) { // Charge started
+//        Led.StartOrContinue(lsqCharging);
+//        Printf("Charge started\r");
+//    }
+//    if(*PState == pssRising) { // Charge ended
+////        Led.StartOrContinue(lsqOperational);
+//        Printf("Charge ended\r");
+//    }
+//}
 
 #if 1 // ======================= Command processing ============================
 void OnCmd(Shell_t *PShell) {

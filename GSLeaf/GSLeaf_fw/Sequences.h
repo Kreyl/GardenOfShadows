@@ -219,15 +219,17 @@ const LedRGBChunk_t lsqCharging[] = {
         {csGoto, 0}
 };
 
+#define CLR_IDLE    {99, 45, 0}
+
 const LedRGBChunk_t lsqIdle[] = {
-        {csSetup, 90, {99, 99, 0}},
+        {csSetup, 90, CLR_IDLE},
         {csEnd}
 };
 
 const LedRGBChunk_t lsqClosed[] = {
         {csSetup, 90, {255, 0, 0}},
         {csWait, 3600},
-        {csSetup, 90, {99, 99, 0}},
+        {csSetup, 90, CLR_IDLE},
         {csEnd}
 };
 
