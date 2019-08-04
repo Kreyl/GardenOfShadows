@@ -68,7 +68,6 @@ private:
 public:
 #if ACC_ACCELERATIONS_NEEDED
     Accelerations_t Accelerations;
-    uint32_t ThresholdTop, ThresholdBottom;
     void ReadAccelerations() {
         uint8_t RegAddr = ACC_REG_STATUS;
         Acc_i2c.WriteRead(ACC_I2C_ADDR, &RegAddr, 1, (uint8_t*)&Accelerations, ACCELERATIONS_SIZE);
@@ -76,6 +75,7 @@ public:
         Accelerations.a[1] = __REVSH(Accelerations.a[1]);
         Accelerations.a[2] = __REVSH(Accelerations.a[2]);
     }
+    int32_t ThresholdStable = 540;
 #endif
     void Init();
     void Task();

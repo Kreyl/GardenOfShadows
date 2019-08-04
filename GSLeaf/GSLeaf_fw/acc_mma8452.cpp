@@ -5,7 +5,6 @@ Acc_t Acc;
 
 #if !MOTION_BY_IRQ
 #define BUF_SZ          20
-#define THR_STABLE      540L
 
 class a_t {
 public:
@@ -63,9 +62,9 @@ void Acc_t::Task() {
 
     // Check if is stable
     if(
-            (Max.a[0] - Min.a[0]) < THR_STABLE and
-            (Max.a[1] - Min.a[1]) < THR_STABLE and
-            (Max.a[2] - Min.a[2]) < THR_STABLE) {
+            (Max.a[0] - Min.a[0]) < ThresholdStable and
+            (Max.a[1] - Min.a[1]) < ThresholdStable and
+            (Max.a[2] - Min.a[2]) < ThresholdStable) {
         // Stable
 //        Printf("%d; %d; %d; Stable\r", (Max.a[0] - Min.a[0]), (Max.a[1] - Min.a[1]), (Max.a[2] - Min.a[2]));
         if(!IsStable) {

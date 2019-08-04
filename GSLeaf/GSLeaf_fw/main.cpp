@@ -11,6 +11,7 @@
 #include "kl_fs_utils.h"
 #include "SimpleSensors.h"
 #include "main.h"
+#include "ini_kl.h"
 
 #if 1 // ======================== Variables and defines ========================
 // Forever
@@ -23,13 +24,15 @@ void ITask();
 
 enum State_t {stIdle, stPlaying, stPauseAfter};
 static State_t State = stIdle;
+static int32_t DelayBeforeNextPlay_s = 7;
 
 LedRGB_t Led { LED_RED_CH, LED_GREEN_CH, LED_BLUE_CH };
 
 PinOutput_t PwrEn(PWR_EN_PIN);
 CS42L52_t Codec;
+static int32_t Volume = 9;
 
-TmrKL_t tmrPauseAfter {TIME_S2I(PAUSE_BETWEEN_PHRASES_S), evtIdPauseEnd, tktOneShot};
+TmrKL_t tmrPauseAfter {TIME_S2I(7), evtIdPauseEnd, tktOneShot};
 DirList_t DirList;
 static char FName[MAX_NAME_LEN];
 #endif
@@ -76,9 +79,30 @@ int main(void) {
     Acc.Init();
 
     SD.Init();
+#if 1 // Read config
+    int32_t tmp;
+    if(ini::ReadInt32("Settings.ini", "Common", "Volume", &tmp) == retvOk) {
+        if(tmp > -100 and tmp <= 12) {
+            Volume = tmp;
+            Printf("Volume: %d\r", tmp);
+        }
+    }
+    if(ini::ReadInt32("Settings.ini", "Common", "Threshold", &tmp) == retvOk) {
+        if(tmp > 0) {
+            Acc.ThresholdStable = tmp;
+            Printf("ThresholdStable: %d\r", tmp);
+        }
+    }
+    if(ini::ReadInt32("Settings.ini", "Common", "Delay", &tmp) == retvOk) {
+        if(tmp > 0) {
+            DelayBeforeNextPlay_s = tmp;
+            Printf("DelayBeforeNextPlay_s: %d\r", DelayBeforeNextPlay_s);
+        }
+    }
+#endif
 
     Codec.SetSpeakerVolume(0);
-    Codec.SetMasterVolume(9);
+    Codec.SetMasterVolume(Volume);
     Codec.Resume();
     Player.Play("alive.wav", spmSingle);
     chThdSleepMilliseconds(1530);
@@ -121,7 +145,9 @@ void ITask() {
                     case stPauseAfter:
                         Printf("AccWhenPause\r");
                         Led.StartOrRestart(lsqAccWhenPause);
-                        tmrPauseAfter.StartOrRestart(); // renew timer
+                        // Renew timer
+//                        tmrPauseAfter.SetNewPeriod_s(DelayBeforeNextPlay_s);
+//                        tmrPauseAfter.StartOrRestart();
                         break;
                 } // switch state
                 break;
@@ -170,6 +196,7 @@ void ITask() {
                 Printf("PlayEnd\r");
                 Led.StartOrRestart(lsqPause);
                 Codec.Standby();
+                tmrPauseAfter.SetNewPeriod_s(DelayBeforeNextPlay_s);
                 tmrPauseAfter.StartOrRestart();
                 State = stPauseAfter;
                 break;
