@@ -4,12 +4,29 @@
 Acc_t Acc;
 
 #if !MOTION_BY_IRQ
-#define AVERAGE_CNT     4
-static uint32_t IArr[AVERAGE_CNT];
+#define BUF_SZ          20
+#define THR_STABLE      540L
+
+class a_t {
+public:
+    int32_t a[3];
+    void Set(int32_t AValue) { a[0] = AValue; a[1] = AValue; a[2] = AValue; }
+    a_t() { a[0] = 0; a[1] = 0; a[2] = 0; }
+    a_t(int32_t AValue) { a[0] = AValue; a[1] = AValue; a[2] = AValue; }
+    a_t& operator = (const a_t &Right) {
+        a[0] = Right.a[0];
+        a[1] = Right.a[1];
+        a[2] = Right.a[2];
+        return *this;
+    }
+};
+
+static a_t IArr[BUF_SZ];
+static bool IsStable = true;
 #endif
 
 // Thread
-static THD_WORKING_AREA(waAccThread, 128);
+static THD_WORKING_AREA(waAccThread, 512);
 __noreturn
 static void AccThread(void *arg) {
     chRegSetThreadName("Acc");
@@ -27,21 +44,43 @@ void Acc_t::Task() {
     }
 #else
     ReadAccelerations();
-    uint32_t Sum =
-            Accelerations.xMSB * Accelerations.xMSB +
-            Accelerations.yMSB * Accelerations.yMSB +
-            Accelerations.zMSB * Accelerations.zMSB;
-    // Calc average
-    for(int i=(AVERAGE_CNT-1); i>=1; i--) IArr[i] = IArr[i-1];
-    IArr[0] = Sum;
-    uint32_t Ave = 0;
-    for(int i=0; i<AVERAGE_CNT; i++) Ave += IArr[i];
-    Ave /= AVERAGE_CNT;
 
-    Printf("X: %d; Y: %d; Z: %d;  Sum: %d; Ave: %d\r", Accelerations.xMSB, Accelerations.yMSB, Accelerations.zMSB, Sum, Ave);
-    if(Ave > MOTION_THRESHOLD_TOP or Sum < MOTION_THRESHOLD_BOTTOM) {
-        Printf("Motion\r");
-        EvtQMain.SendNowOrExit(EvtMsg_t(evtIdAcc));
+    // Shift buffer and find Min and Max
+    a_t Min(2000000000), Max(-2000000000);
+    for(int i=(BUF_SZ-1); i>=1; i--) {
+        IArr[i] = IArr[i-1];
+        if(IArr[i].a[0] < Min.a[0]) Min.a[0] = IArr[i].a[0];
+        if(IArr[i].a[1] < Min.a[1]) Min.a[1] = IArr[i].a[1];
+        if(IArr[i].a[2] < Min.a[2]) Min.a[2] = IArr[i].a[2];
+        if(IArr[i].a[0] > Max.a[0]) Max.a[0] = IArr[i].a[0];
+        if(IArr[i].a[1] > Max.a[1]) Max.a[1] = IArr[i].a[1];
+        if(IArr[i].a[2] > Max.a[2]) Max.a[2] = IArr[i].a[2];
+    } // for
+    // Add new value
+    IArr[0].a[0] = Accelerations.a[0];
+    IArr[0].a[1] = Accelerations.a[1];
+    IArr[0].a[2] = Accelerations.a[2];
+
+    // Check if is stable
+    if(
+            (Max.a[0] - Min.a[0]) < THR_STABLE and
+            (Max.a[1] - Min.a[1]) < THR_STABLE and
+            (Max.a[2] - Min.a[2]) < THR_STABLE) {
+        // Stable
+//        Printf("%d; %d; %d; Stable\r", (Max.a[0] - Min.a[0]), (Max.a[1] - Min.a[1]), (Max.a[2] - Min.a[2]));
+        if(!IsStable) {
+            IsStable = true;
+            Printf("Stable\r");
+            EvtQMain.SendNowOrExit(EvtMsg_t(evtIdStable));
+        }
+    }
+    else { // Not stable
+//        Printf("%d; %d; %d\r", (Max.a[0] - Min.a[0]), (Max.a[1] - Min.a[1]), (Max.a[2] - Min.a[2]));
+        if(IsStable) {
+            IsStable = false;
+            Printf("Motion\r");
+            EvtQMain.SendNowOrExit(EvtMsg_t(evtIdMotion));
+        }
     }
 #endif
 }
@@ -84,7 +123,7 @@ void Acc_t::Init() {
 
 #if !MOTION_BY_IRQ
     // Init average
-    for(int i=0; i<AVERAGE_CNT; i++) IArr[i] = 1008;
+    for(int i=0; i<BUF_SZ; i++) IArr[i].Set(1008);
 #endif
 
     // Thread

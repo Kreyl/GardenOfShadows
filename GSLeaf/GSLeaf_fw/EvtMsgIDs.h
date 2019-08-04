@@ -7,7 +7,10 @@ enum EvtMsgId_t {
     evtIdShellCmd,
     evtIdEverySecond,
 
-    evtIdAcc,
+    evtIdMotion,
+    evtIdStable,
+
+    evtIdPauseEnd,
 
     evtIdSoundPlayStop,
 

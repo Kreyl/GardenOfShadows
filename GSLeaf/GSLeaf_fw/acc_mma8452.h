@@ -43,7 +43,7 @@
 #if ACC_ACCELERATIONS_NEEDED
 struct Accelerations_t {
     uint8_t Status;     // Read to reset latched data
-    int8_t xMSB, xLSB, yMSB, yLSB, zMSB, zLSB;
+    int16_t a[3];
 } __packed;
 #define ACCELERATIONS_SIZE     sizeof(Accelerations_t)
 #endif
@@ -72,6 +72,9 @@ public:
     void ReadAccelerations() {
         uint8_t RegAddr = ACC_REG_STATUS;
         Acc_i2c.WriteRead(ACC_I2C_ADDR, &RegAddr, 1, (uint8_t*)&Accelerations, ACCELERATIONS_SIZE);
+        Accelerations.a[0] = __REVSH(Accelerations.a[0]);
+        Accelerations.a[1] = __REVSH(Accelerations.a[1]);
+        Accelerations.a[2] = __REVSH(Accelerations.a[2]);
     }
 #endif
     void Init();

@@ -20,12 +20,16 @@ CmdUart_t Uart{&CmdUartParams};
 void OnCmd(Shell_t *PShell);
 void ITask();
 
-#define PAUSE_BETWEEN_PHRASES_S       7
+
+enum State_t {stIdle, stPlaying, stPauseAfter};
+static State_t State = stIdle;
+
+LedRGB_t Led { LED_RED_CH, LED_GREEN_CH, LED_BLUE_CH };
 
 PinOutput_t PwrEn(PWR_EN_PIN);
 CS42L52_t Codec;
 
-//TmrKL_t tmrOpen {TIME_S2I(11), evtIdDoorIsClosing, tktOneShot};
+TmrKL_t tmrPauseAfter {TIME_S2I(PAUSE_BETWEEN_PHRASES_S), evtIdPauseEnd, tktOneShot};
 DirList_t DirList;
 static char FName[MAX_NAME_LEN];
 #endif
@@ -49,6 +53,9 @@ int main(void) {
     Uart.Init();
     Printf("\r%S %S\r\n", APP_NAME, XSTRINGIFY(BUILD_TIME));
     Clk.PrintFreqs();
+
+    Led.Init();
+    Led.StartOrRestart(lsqStart);
 
     PwrEn.Init();
     PwrEn.SetLo();
@@ -74,6 +81,7 @@ int main(void) {
     Codec.SetMasterVolume(9);
     Codec.Resume();
     Player.Play("alive.wav", spmSingle);
+    chThdSleepMilliseconds(1530);
 
 //    SimpleSensors::Init();
 
@@ -91,20 +99,37 @@ void ITask() {
                 ((Shell_t*)Msg.Ptr)->SignalCmdProcessed();
                 break;
 
-            case evtIdAcc:
-//                if(State == stIdle) {
-//                    Printf("AccWhenIdle\r");
-//                    Led.StartOrRestart(lsqAccIdle);
-//                    State = stPlaying;
-//                    Audio.Resume();
-//                    Player.PlayRandomFileFromDir("Sounds");
-////                    Player.Play("Alive.wav");
-//                }
-//                else if(State == stWaiting) {
-//                    Printf("AccWhenW\r");
-//                    Led.StartOrRestart(lsqAccWaiting);
-//                    tmrPauseAfter.StartOrRestart();
-//                }
+            case evtIdMotion:
+                switch(State) {
+                    case stIdle:
+                        Printf("AccWhenIdle\r");
+                        if(DirList.GetRandomFnameFromDir(DIRNAME_SND, FName) == retvOk) {
+                            Led.StartOrRestart(lsqAccWhenIdleAndPlay);
+                            Codec.Resume();
+                            Codec.SetMasterVolume(9);
+                            Player.Play(FName, spmSingle);
+                            State = stPlaying;
+                        }
+                        else Led.StartOrRestart(lsqAccWhenIdleAndNothing);
+                        break;
+
+                    case stPlaying:
+                        Printf("AccWhenPlaying\r");
+                        Led.StartOrRestart(lsqAccWhenPlaying);
+                        break;
+
+                    case stPauseAfter:
+                        Printf("AccWhenPause\r");
+                        Led.StartOrRestart(lsqAccWhenPause);
+                        tmrPauseAfter.StartOrRestart(); // renew timer
+                        break;
+                } // switch state
+                break;
+
+            case evtIdPauseEnd:
+                Printf("PauseEnd\r");
+                State = stIdle;
+                Led.StartOrRestart(lsqIdle);
                 break;
 
 #if 0 // ==== Logic ====
@@ -141,17 +166,13 @@ void ITask() {
                 break;
 #endif
 
-            case evtIdSoundPlayStop: {
+            case evtIdSoundPlayStop:
                 Printf("PlayEnd\r");
+                Led.StartOrRestart(lsqPause);
                 Codec.Standby();
-//                IdPlayingNow = IdPlayNext;
-//                IdPlayNext = ID_SURROUND;
-//                // Decide what to play: surround or some id
-//                if(IdPlayingNow == ID_SURROUND) strcpy(DirName, DIRNAME_SURROUND);
-//                else itoa(IdPlayingNow, DirName, 10);
-////                Printf("Play %S\r", DirName);
-//                Player.PlayRandomFileFromDir(DirName);
-            } break;
+                tmrPauseAfter.StartOrRestart();
+                State = stPauseAfter;
+                break;
 
             default: break;
         } // switch

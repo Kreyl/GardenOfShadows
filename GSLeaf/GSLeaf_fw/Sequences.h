@@ -193,7 +193,7 @@ const LedRGBChunk_t lsqStart[] = {
         {csSetup, 90, clRed},
         {csSetup, 90, clGreen},
         {csSetup, 90, clBlue},
-        {csSetup, 90, {0, 2, 0}},
+        {csSetup, 90, {0, 0, 2}},
         {csEnd}
 };
 
@@ -213,23 +213,32 @@ const LedRGBChunk_t lsqFailure[] = {
         {csEnd}
 };
 
-const LedRGBChunk_t lsqCharging[] = {
-        {csSetup, 360, clBlue},
-        {csSetup, 360, clBlack},
-        {csGoto, 0}
-};
-
-#define CLR_IDLE    {99, 45, 0}
-
-const LedRGBChunk_t lsqIdle[] = {
-        {csSetup, 90, CLR_IDLE},
+const LedRGBChunk_t lsqAccWhenIdleAndPlay[] = {
+        {csSetup, 0, clGreen},
+        {csSetup, 360, {0,7,0}},
         {csEnd}
 };
-
-const LedRGBChunk_t lsqClosed[] = {
-        {csSetup, 90, {255, 0, 0}},
-        {csWait, 3600},
-        {csSetup, 90, CLR_IDLE},
+const LedRGBChunk_t lsqAccWhenIdleAndNothing[] = {
+        {csSetup, 0, clGreen},
+        {csSetup, 360, {0,0,2}},
+        {csEnd}
+};
+const LedRGBChunk_t lsqAccWhenPlaying[] = {
+        {csSetup, 360, clRed},
+        {csSetup, 360, {0,7,0}},
+        {csEnd}
+};
+const LedRGBChunk_t lsqAccWhenPause[] = {
+        {csSetup, 360, clYellow},
+        {csSetup, 360, {2,2,0}},
+        {csEnd}
+};
+const LedRGBChunk_t lsqPause[] = {
+        {csSetup, 90, {2, 2, 0}},
+        {csEnd}
+};
+const LedRGBChunk_t lsqIdle[] = {
+        {csSetup, 90, {0, 0, 2}},
         {csEnd}
 };
 
