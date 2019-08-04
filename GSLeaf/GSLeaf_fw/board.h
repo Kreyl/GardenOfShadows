@@ -9,7 +9,7 @@
 
 // ==== General ====
 #define BOARD_NAME          "GSLeaf01"
-#define APP_NAME            "GSLeaf"
+#define APP_NAME            "FrenchBottle"
 
 // MCU type as defined in the ST header.
 #define STM32L476xx
@@ -26,18 +26,14 @@
 #define I2C1_ENABLED            TRUE
 #define I2C2_ENABLED            FALSE
 #define I2C3_ENABLED            FALSE
-#define SIMPLESENSORS_ENABLED   TRUE
-#define BUTTONS_ENABLED         TRUE
+#define SIMPLESENSORS_ENABLED   FALSE
+#define BUTTONS_ENABLED         FALSE
 
 #define ADC_REQUIRED            FALSE
 
 #if 1 // ========================== GPIO =======================================
 // EXTI
 #define INDIVIDUAL_EXTI_IRQ_REQUIRED    FALSE
-
-// Buttons
-#define BTN1_PIN        GPIOA, 0, pudPullDown
-#define BTN2_PIN        GPIOA, 1, pudPullDown
 
 // UART
 #define UART_GPIO       GPIOA

@@ -7,13 +7,8 @@ enum EvtMsgId_t {
     evtIdShellCmd,
     evtIdEverySecond,
 
-    evtIdButtons,
     evtIdAcc,
-    evtIdOnRx,
 
     evtIdSoundPlayStop,
 
-    evtIdSns,
-    evtIdOpen,
-    evtIdDoorIsClosing,
 };
