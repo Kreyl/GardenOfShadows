@@ -7,7 +7,6 @@
 #include "CS42L52.h"
 #include "kl_sd.h"
 #include "AuPlayer.h"
-#include "acc_mma8452.h"
 #include "kl_fs_utils.h"
 #include "SimpleSensors.h"
 #include "main.h"
@@ -76,7 +75,6 @@ int main(void) {
     Player.Init();
 
 //    i2c1.ScanBus();
-    Acc.Init();
 
     SD.Init();
 #if 1 // Read config
@@ -87,12 +85,7 @@ int main(void) {
             Printf("Volume: %d\r", tmp);
         }
     }
-    if(ini::ReadInt32("Settings.ini", "Common", "Threshold", &tmp) == retvOk) {
-        if(tmp > 0) {
-            Acc.ThresholdStable = tmp;
-            Printf("ThresholdStable: %d\r", tmp);
-        }
-    }
+
     if(ini::ReadInt32("Settings.ini", "Common", "Delay", &tmp) == retvOk) {
         if(tmp > 0) {
             DelayBeforeNextPlay_s = tmp;

@@ -9,7 +9,7 @@
 
 // ==== General ====
 #define BOARD_NAME          "GSLeaf01"
-#define APP_NAME            "FrenchBottle"
+#define APP_NAME            "Portrait"
 
 // MCU type as defined in the ST header.
 #define STM32L476xx
@@ -34,6 +34,9 @@
 #if 1 // ========================== GPIO =======================================
 // EXTI
 #define INDIVIDUAL_EXTI_IRQ_REQUIRED    FALSE
+
+// Sensor
+#define SNS_PIN         GPIOB, 13
 
 // UART
 #define UART_GPIO       GPIOA
@@ -64,11 +67,6 @@
 #define AU_SAI_A        SAI1_Block_A
 #define AU_SAI_B        SAI1_Block_B
 #define AU_SAI_RccEn()  RCC->APB2ENR |= RCC_APB2ENR_SAI1EN
-
-// Acc
-#define Acc_i2c         i2c1
-#define ACC_IRQ_GPIO    GPIOB
-#define ACC_IRQ_PIN     2
 
 // I2C
 #define I2C1_GPIO       GPIOB
