@@ -20,6 +20,8 @@ CmdUart_t Uart{&CmdUartParams};
 void OnCmd(Shell_t *PShell);
 void ITask();
 
+PinInput_t Sns(SNS_PIN);
+static bool WasHi = false;
 
 enum State_t {stIdle, stPlaying, stPauseAfter};
 static State_t State = stIdle;
@@ -32,6 +34,7 @@ CS42L52_t Codec;
 static int32_t Volume = 9;
 
 TmrKL_t tmrPauseAfter {TIME_S2I(7), evtIdPauseEnd, tktOneShot};
+TmrKL_t tmrSnsCheck {TIME_MS2I(207), evtIdCheckSns, tktPeriodic};
 DirList_t DirList;
 static char FName[MAX_NAME_LEN];
 #endif
@@ -76,6 +79,9 @@ int main(void) {
 
 //    i2c1.ScanBus();
 
+    Sns.Init();
+    tmrSnsCheck.StartOrRestart();
+
     SD.Init();
 #if 1 // Read config
     int32_t tmp;
@@ -116,33 +122,38 @@ void ITask() {
                 ((Shell_t*)Msg.Ptr)->SignalCmdProcessed();
                 break;
 
-            case evtIdMotion:
-                switch(State) {
-                    case stIdle:
-                        Printf("AccWhenIdle\r");
-                        if(DirList.GetRandomFnameFromDir(DIRNAME_SND, FName) == retvOk) {
-                            Led.StartOrRestart(lsqAccWhenIdleAndPlay);
-                            Codec.Resume();
-                            Codec.SetMasterVolume(9);
-                            Player.Play(FName, spmSingle);
-                            State = stPlaying;
-                        }
-                        else Led.StartOrRestart(lsqAccWhenIdleAndNothing);
-                        break;
+            case evtIdCheckSns:
+                // Check if sns changed
+                if(Sns.IsHi() and !WasHi) {
+                    WasHi = true;
+                    switch(State) {
+                        case stIdle:
+                            Printf("SnsWhenIdle\r");
+                            if(DirList.GetRandomFnameFromDir(DIRNAME_SND, FName) == retvOk) {
+                                Led.StartOrRestart(lsqAccWhenIdleAndPlay);
+                                Codec.Resume();
+                                Codec.SetMasterVolume(9);
+                                Player.Play(FName, spmSingle);
+                                State = stPlaying;
+                            }
+                            else Led.StartOrRestart(lsqAccWhenIdleAndNothing);
+                            break;
 
-                    case stPlaying:
-                        Printf("AccWhenPlaying\r");
-                        Led.StartOrRestart(lsqAccWhenPlaying);
-                        break;
+                        case stPlaying:
+                            Printf("SnsWhenPlaying\r");
+                            Led.StartOrRestart(lsqAccWhenPlaying);
+                            break;
 
-                    case stPauseAfter:
-                        Printf("AccWhenPause\r");
-                        Led.StartOrRestart(lsqAccWhenPause);
-                        // Renew timer
-//                        tmrPauseAfter.SetNewPeriod_s(DelayBeforeNextPlay_s);
-//                        tmrPauseAfter.StartOrRestart();
-                        break;
-                } // switch state
+                        case stPauseAfter:
+                            Printf("SnsWhenPause\r");
+                            Led.StartOrRestart(lsqAccWhenPause);
+                            break;
+                    } // switch state
+                }
+                else if(!Sns.IsHi() and WasHi) {
+                    WasHi = false;
+                    Printf("SnsOff\r");
+                }
                 break;
 
             case evtIdPauseEnd:
@@ -150,40 +161,6 @@ void ITask() {
                 State = stIdle;
                 Led.StartOrRestart(lsqIdle);
                 break;
-
-#if 0 // ==== Logic ====
-            case evtIdSns:
-                Printf("Sns, %u\r", State);
-                if(State == stateClosed) {
-                    if(DirList.GetRandomFnameFromDir(DIRNAME_SND_CLOSED, FName) == retvOk) {
-                        Codec.Resume();
-                        Codec.SetMasterVolume(9);
-                        Player.Play(FName, spmSingle);
-                    }
-                    Led.StartOrRestart(lsqClosed);
-                }
-                else {
-                    if(DirList.GetRandomFnameFromDir(DIRNAME_SND_OPEN, FName) == retvOk) {
-                        Codec.Resume();
-                        Player.Play(FName, spmSingle);
-                    }
-                    // Close the door
-                    tmrOpen.Stop();
-                    State = stateClosed;
-                }
-                break;
-
-            case evtIdDoorIsClosing:
-                Printf("Closing\r");
-                State = stateClosed;
-                break;
-
-            case evtIdOpen:
-                Printf("Open\r");
-                State = stateOpen;
-                tmrOpen.StartOrRestart();
-                break;
-#endif
 
             case evtIdSoundPlayStop:
                 Printf("PlayEnd\r");
@@ -199,13 +176,6 @@ void ITask() {
     } // while true
 }
 
-void ProcessSns(PinSnsState_t *PState, uint32_t Len) {
-//    if(*PState == pssRising) {
-//        EvtQMain.SendNowOrExit(EvtMsg_t(evtIdSns));
-//    }
-//    Printf("st: %u\r", *PState);
-}
-
 #if 1 // ======================= Command processing ============================
 void OnCmd(Shell_t *PShell) {
 	Cmd_t *PCmd = &PShell->Cmd;
@@ -215,9 +185,9 @@ void OnCmd(Shell_t *PShell) {
     if(PCmd->NameIs("Ping")) PShell->Ack(retvOk);
     else if(PCmd->NameIs("Version")) PShell->Print("%S %S\r", APP_NAME, XSTRINGIFY(BUILD_TIME));
 
-//    else if(PCmd->NameIs("s")) {
-//        EvtQMain.SendNowOrExit(EvtMsg_t(evtIdSns));
-//    }
+    else if(PCmd->NameIs("s")) {
+        Printf("Sns: %u\r", Sns.IsHi());
+    }
 
     else PShell->Ack(retvCmdUnknown);
 }

@@ -36,7 +36,7 @@
 #define INDIVIDUAL_EXTI_IRQ_REQUIRED    FALSE
 
 // Sensor
-#define SNS_PIN         GPIOB, 13
+#define SNS_PIN         { GPIOB, 15, pudPullDown }
 
 // UART
 #define UART_GPIO       GPIOA
