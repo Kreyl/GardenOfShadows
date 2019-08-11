@@ -82,9 +82,10 @@ int main(void) {
 #if 1 // Read config
     int32_t tmp;
     if(ini::ReadInt32("Settings.ini", "Common", "Volume", &tmp) == retvOk) {
-        if(tmp > -100 and tmp <= 12) {
-            Volume = tmp;
-            Printf("Volume: %d\r", tmp);
+        if(tmp >= 0 and tmp <= 100) {
+            // 0...100 => -38...12
+            Volume = (tmp / 2) - 38;
+            Printf("Volume: %d -> %d\r", tmp, Volume);
         }
     }
     if(ini::ReadInt32("Settings.ini", "Common", "Threshold", &tmp) == retvOk) {
@@ -130,7 +131,7 @@ void ITask() {
                         if(DirList.GetRandomFnameFromDir(DIRNAME_SND, FName) == retvOk) {
                             Led.StartOrRestart(lsqAccWhenIdleAndPlay);
                             Codec.Resume();
-                            Codec.SetMasterVolume(9);
+                            Codec.SetMasterVolume(Volume);
                             Player.Play(FName, spmSingle);
                             State = stPlaying;
                         }
@@ -157,40 +158,6 @@ void ITask() {
                 State = stIdle;
                 Led.StartOrRestart(lsqIdle);
                 break;
-
-#if 0 // ==== Logic ====
-            case evtIdSns:
-                Printf("Sns, %u\r", State);
-                if(State == stateClosed) {
-                    if(DirList.GetRandomFnameFromDir(DIRNAME_SND_CLOSED, FName) == retvOk) {
-                        Codec.Resume();
-                        Codec.SetMasterVolume(9);
-                        Player.Play(FName, spmSingle);
-                    }
-                    Led.StartOrRestart(lsqClosed);
-                }
-                else {
-                    if(DirList.GetRandomFnameFromDir(DIRNAME_SND_OPEN, FName) == retvOk) {
-                        Codec.Resume();
-                        Player.Play(FName, spmSingle);
-                    }
-                    // Close the door
-                    tmrOpen.Stop();
-                    State = stateClosed;
-                }
-                break;
-
-            case evtIdDoorIsClosing:
-                Printf("Closing\r");
-                State = stateClosed;
-                break;
-
-            case evtIdOpen:
-                Printf("Open\r");
-                State = stateOpen;
-                tmrOpen.StartOrRestart();
-                break;
-#endif
 
             case evtIdSoundPlayStop:
                 Printf("PlayEnd\r");
