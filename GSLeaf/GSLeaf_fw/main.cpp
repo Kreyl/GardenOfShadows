@@ -86,9 +86,10 @@ int main(void) {
 #if 1 // Read config
     int32_t tmp;
     if(ini::ReadInt32("Settings.ini", "Common", "Volume", &tmp) == retvOk) {
-        if(tmp > -100 and tmp <= 12) {
-            Volume = tmp;
-            Printf("Volume: %d\r", tmp);
+        if(tmp >= 0 and tmp <= 100) {
+            // 0...100 => -38...12
+            Volume = (tmp / 2) - 38;
+            Printf("Volume: %d -> %d\r", tmp, Volume);
         }
     }
 
@@ -132,7 +133,7 @@ void ITask() {
                             if(DirList.GetRandomFnameFromDir(DIRNAME_SND, FName) == retvOk) {
                                 Led.StartOrRestart(lsqAccWhenIdleAndPlay);
                                 Codec.Resume();
-                                Codec.SetMasterVolume(9);
+                                Codec.SetMasterVolume(Volume);
                                 Player.Play(FName, spmSingle);
                                 State = stPlaying;
                             }
