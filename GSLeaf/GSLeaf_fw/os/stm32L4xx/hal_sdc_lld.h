@@ -169,18 +169,20 @@
 #endif
 
 /* Clock related tests.*/
-//#if STM32_HAS_SDMMC1 && !defined(STM32_SDMMC1CLK)
-//#error "STM32_SDMMC1CLK not defined"
-//#endif
+#define STM32_SDMMC1CLK     48000000 // @KL
+#if STM32_HAS_SDMMC1 && !defined(STM32_SDMMC1CLK)
+#error "STM32_SDMMC1CLK not defined"
+#endif
 
 /* Clock related tests.*/
 #if STM32_HAS_SDMMC2 && !defined(STM32_SDMMC2CLK)
 #error "STM32_SDMMC2CLK not defined"
 #endif
 
-//#if !defined(STM32_HCLK)
-//#error "STM32_HCLK not defined"
-//#endif
+#define STM32_HCLK      80000000 // @KL
+#if !defined(STM32_HCLK)
+#error "STM32_HCLK not defined"
+#endif
 
 #if STM32_HAS_SDMMC1 && (STM32_SDMMC1CLK * 10 > STM32_HCLK * 7)
 #error "STM32_SDMMC1CLK must not exceed STM32_HCLK * 0.7"

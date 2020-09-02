@@ -31,7 +31,7 @@
 #define _CHIBIOS_HAL_CONF_
 #define _CHIBIOS_HAL_CONF_VER_7_0_
 
-#include "mcuconf.h"
+#include <mcuconf.h>
 
 /**
  * @brief   Enables the PAL subsystem.
@@ -142,7 +142,7 @@
  * @brief   Enables the SERIAL over USB subsystem.
  */
 #if !defined(HAL_USE_SERIAL_USB) || defined(__DOXYGEN__)
-#define HAL_USE_SERIAL_USB                  FALSE
+#define HAL_USE_SERIAL_USB                  TRUE
 #endif
 
 /**
@@ -177,7 +177,7 @@
  * @brief   Enables the USB subsystem.
  */
 #if !defined(HAL_USE_USB) || defined(__DOXYGEN__)
-#define HAL_USE_USB                         FALSE
+#define HAL_USE_USB                         TRUE
 #endif
 
 /**
@@ -302,7 +302,7 @@
  * @brief   Enables the mutual exclusion APIs on the I2C bus.
  */
 #if !defined(I2C_USE_MUTUAL_EXCLUSION) || defined(__DOXYGEN__)
-#define I2C_USE_MUTUAL_EXCLUSION            TRUE
+#define I2C_USE_MUTUAL_EXCLUSION            FALSE
 #endif
 
 /*===========================================================================*/

@@ -38,7 +38,7 @@
 #ifndef HAL_LLD_H
 #define HAL_LLD_H
 
-#include <stm32L476/stm32_registry.h>
+#include "stm32_registry.h"
 
 /*===========================================================================*/
 /* Driver constants.                                                         */
@@ -377,17 +377,16 @@
 /* Various helpers.*/
 #include "nvic.h"
 #include "cache.h"
-#include <stm32L476/mpu_v7m.h>
-#include <stm32L476/stm32_isr.h>
-#include <stm32L476/stm32_dma.h>
+#include "mpu_v7m.h"
+#include "stm32_isr.h"
+#include "stm32_dma.h"
 #include "stm32_exti.h"
-#include <stm32L476/stm32_rcc.h>
+#include "stm32_rcc.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
   void hal_lld_init(void);
-  void stm32_clock_init(void);
 #ifdef __cplusplus
 }
 #endif

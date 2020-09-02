@@ -67,7 +67,7 @@
 /** @} */
 
 /* Inclusion of the Cortex-Mx implementation specific parameters.*/
-#include <stm32L476/cmparams.h>
+#include "cmparams.h"
 
 /*===========================================================================*/
 /* Module pre-compile time settings.                                         */
@@ -193,7 +193,7 @@ struct port_context {
 #include "chcore_v6m.h"
 #elif (CORTEX_MODEL == 3) || (CORTEX_MODEL == 4) || (CORTEX_MODEL == 7)
 #include "mpu.h"
-#include <stm32L476/chcore_v7m.h>
+#include "chcore_v7m.h"
 #else
 #error "unknown Cortex-M variant"
 #endif

@@ -25,7 +25,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#include <stm32L476/cmparams.h>
+#include "cmparams.h"
 
 /*===========================================================================*/
 /* Module local definitions.                                                 */

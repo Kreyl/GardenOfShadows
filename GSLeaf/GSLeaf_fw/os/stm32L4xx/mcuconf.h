@@ -41,6 +41,27 @@
 #define STM32_NO_INIT                       FALSE
 
 /*
+ * IRQ system settings.
+ */
+#define STM32_IRQ_EXTI0_PRIORITY            6
+#define STM32_IRQ_EXTI1_PRIORITY            6
+#define STM32_IRQ_EXTI2_PRIORITY            6
+#define STM32_IRQ_EXTI3_PRIORITY            6
+#define STM32_IRQ_EXTI4_PRIORITY            6
+#define STM32_IRQ_EXTI5_9_PRIORITY          6
+#define STM32_IRQ_EXTI10_15_PRIORITY        6
+#define STM32_IRQ_EXTI1635_38_PRIORITY      6
+#define STM32_IRQ_EXTI18_PRIORITY           6
+#define STM32_IRQ_EXTI19_PRIORITY           6
+#define STM32_IRQ_EXTI20_PRIORITY           6
+#define STM32_IRQ_EXTI21_22_PRIORITY        15
+#define STM32_IRQ_TIM1_BRK_TIM15_PRIORITY   7
+#define STM32_IRQ_TIM1_UP_TIM16_PRIORITY    7
+#define STM32_IRQ_TIM1_TRGCO_TIM17_PRIORITY 7
+#define STM32_IRQ_TIM1_CC_PRIORITY          7
+
+
+/*
  * SDC driver system settings.
  */
 #define STM32_SDC_USE_SDMMC1                TRUE
@@ -50,12 +71,19 @@
 #define STM32_SDC_SDMMC_CLOCK_DELAY         10
 #define STM32_SDC_SDMMC1_DMA_PRIORITY       3
 #define STM32_SDC_SDMMC1_IRQ_PRIORITY       9
-#define STM32_SDC_SDMMC1_DMA_STREAM         STM32_DMA_STREAM_ID(2, 4)
+//#define STM32_SDC_SDMMC1_DMA_STREAM         STM32_DMA_STREAM_ID(2, 4)
+
+
+/*
+ * ST driver system settings.
+ */
+//#define STM32_ST_IRQ_PRIORITY               8
+//#define STM32_ST_USE_TIMER                  2
 
 /*
  * USB driver system settings.
  */
-#define STM32_USB_USE_OTG1                  FALSE
+#define STM32_USB_USE_OTG1                  TRUE
 #define STM32_USB_OTG1_IRQ_PRIORITY         14
 #define STM32_USB_OTG1_RX_FIFO_SIZE         512
 

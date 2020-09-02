@@ -193,9 +193,9 @@
 #error "Invalid IRQ priority assigned to STM32_IRQ_EXTI10_15_PRIORITY"
 #endif
 
-//#if !OSAL_IRQ_IS_VALID_PRIORITY(STM32_IRQ_EXTI1635_38_PRIORITY)
-//#error "Invalid IRQ priority assigned to STM32_IRQ_EXTI1635_38_PRIORITY"
-//#endif
+#if !OSAL_IRQ_IS_VALID_PRIORITY(STM32_IRQ_EXTI1635_38_PRIORITY)
+#error "Invalid IRQ priority assigned to STM32_IRQ_EXTI1635_38_PRIORITY"
+#endif
 
 #if !OSAL_IRQ_IS_VALID_PRIORITY(STM32_IRQ_EXTI18_PRIORITY)
 #error "Invalid IRQ priority assigned to STM32_IRQ_EXTI18_PRIORITY"

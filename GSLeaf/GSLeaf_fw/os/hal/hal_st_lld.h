@@ -27,9 +27,8 @@
 #ifndef HAL_ST_LLD_H
 #define HAL_ST_LLD_H
 
-#include <stm32L476/stm32_registry.h>
-
 #include "mcuconf.h"
+#include "stm32_registry.h"
 #include "stm32_tim.h"
 
 /*===========================================================================*/

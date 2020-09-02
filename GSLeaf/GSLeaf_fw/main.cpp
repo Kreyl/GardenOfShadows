@@ -40,15 +40,34 @@ static char FName[MAX_NAME_LEN];
 #endif
 
 int main(void) {
-    // ==== Setup clock frequency ====
-    Clk.SetCoreClk(cclk24MHz);
+#if 1 // ==== Setup clock frequency ====
+    Clk.EnablePrefetch();
+    Clk.SwitchToMSI();
+    Clk.SetVoltageRange(mvrHiPerf);
+    Clk.SetupFlashLatency(80, mvrHiPerf);
+    // Try quartz
+    if(Clk.EnableHSE() == retvOk) {
+        Clk.SetupPllSrc(pllsrcHse);
+        Clk.SetupM(3); // 12MHz / 3 = 4
+    }
+    else { // Quartz failed
+        Clk.SetupPllSrc(pllsrcMsi);
+        Clk.SetupM(1); // 4MHz / 1 = 4
+    }
+    Clk.SetupPll(40, 2, 2);         // Sys clk: 4 * 40 / 2 => 80
+    Clk.SetupPllSai1(24, 2, 2, 7);  // 48Mhz clk: 4 * 24 / 2 => 48
+    // Sys clk
+    if(Clk.EnablePLL() == retvOk) {
+        Clk.EnablePllROut();
+        Clk.SwitchToPLL();
+    }
+    // 48 MHz
+    if(Clk.EnablePllSai1() == retvOk) {
+        Clk.EnablePllSai1QOut();
+        Clk.SetupSai1Qas48MhzSrc();
+    }
     Clk.UpdateFreqValues();
-    // 48 MHz Clock
-    Clk.EnablePLLQOut();
-    Clk.Select48MHzClk(src48PllQ);
-    // SAI clock
-    Clk.EnablePLLPOut();
-    Clk.SelectSAI1Clk(srcSaiPllP);
+#endif
 
     // Init OS
     halInit();
@@ -62,9 +81,9 @@ int main(void) {
     Led.Init();
     Led.StartOrRestart(lsqStart);
 
-    PwrEn.Init();
-    PwrEn.SetLo();
-    chThdSleepMilliseconds(18);
+//    PwrEn.Init();
+//    PwrEn.SetLo();
+//    chThdSleepMilliseconds(18);
 
     // Audio
     i2c1.Init();
@@ -75,15 +94,15 @@ int main(void) {
     Codec.SetupMonoStereo(Stereo); // Always
     Codec.Standby();
     // Decoder
-    Player.Init();
+//    Player.Init();
 
 //    i2c1.ScanBus();
 
-    Sns.Init();
-    tmrSnsCheck.StartOrRestart();
+//    Sns.Init();
+//    tmrSnsCheck.StartOrRestart();
 
-    SD.Init();
-#if 1 // Read config
+//    SD.Init();
+#if 0 // Read config
     int32_t tmp;
     if(ini::ReadInt32("Settings.ini", "Common", "Volume", &tmp) == retvOk) {
         if(tmp >= 0 and tmp <= 100) {
@@ -101,11 +120,11 @@ int main(void) {
     }
 #endif
 
-    Codec.SetSpeakerVolume(0);
-    Codec.SetMasterVolume(Volume);
-    Codec.Resume();
-    Player.Play("alive.wav", spmSingle);
-    chThdSleepMilliseconds(1530);
+//    Codec.SetSpeakerVolume(0);
+//    Codec.SetMasterVolume(Volume);
+//    Codec.Resume();
+//    Player.Play("alive.wav", spmSingle);
+//    chThdSleepMilliseconds(1530);
 
 //    SimpleSensors::Init();
 

@@ -25,9 +25,9 @@
 #ifndef HAL_H
 #define HAL_H
 
+#include <halconf.h>
 #include "osal.h"
 #include "board.h"
-#include "halconf.h"
 
 /* Error checks on the configuration header file.*/
 #if !defined(HAL_USE_PAL)
@@ -115,7 +115,7 @@
 #endif
 
 /* Low Level HAL support.*/
-#include <stm32L476/hal_lld.h>
+#include "hal_lld.h"
 
 /* Abstract interfaces.*/
 #include "hal_objects.h"
@@ -149,7 +149,7 @@
 //#include "hal_spi.h"
 //#include "hal_trng.h"
 //#include "hal_uart.h"
-//#include "hal_usb.h"
+#include "hal_usb.h"
 //#include "hal_wdg.h"
 //#include "hal_wspi.h"
 
@@ -163,7 +163,7 @@
 
 /* Complex drivers.*/
 //#include "hal_mmc_spi.h"
-//#include "hal_serial_usb.h"
+#include "hal_serial_usb.h"
 
 /* Community drivers.*/
 #if defined(HAL_USE_COMMUNITY) || defined(__DOXYGEN__)
@@ -193,7 +193,7 @@
 /**
  * @brief   HAL version string.
  */
-#define HAL_VERSION             "7.0.0"
+#define HAL_VERSION             "7.0.3"
 
 /**
  * @brief   HAL version major number.
@@ -208,7 +208,7 @@
 /**
  * @brief   HAL version patch number.
  */
-#define CH_HAL_PATCH            0
+#define CH_HAL_PATCH            3
 /** @} */
 
 /**

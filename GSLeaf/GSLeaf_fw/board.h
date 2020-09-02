@@ -1,7 +1,7 @@
 /*
  * board.h
  *
- *  Created on: 12 сент. 2015 г.
+ *  Created on: 12 пїЅпїЅпїЅпїЅ. 2015 пїЅ.
  *      Author: Kreyl
  */
 
@@ -36,7 +36,7 @@
 #define INDIVIDUAL_EXTI_IRQ_REQUIRED    FALSE
 
 // Sensor
-#define SNS_PIN         { GPIOB, 15, pudPullDown }
+#define SNS_PIN         GPIOB, 15, pudPullDown
 
 // UART
 #define UART_GPIO       GPIOA
@@ -146,7 +146,7 @@
 #define SAI_DMA_CHNL    1
 
 // ==== SDMMC ====
-//#define STM32_SDC_SDMMC1_DMA_STREAM   STM32_DMA_STREAM_ID(2, 5)
+#define STM32_SDC_SDMMC1_DMA_STREAM   STM32_DMA_STREAM_ID(2, 5)
 
 #if ADC_REQUIRED
 #define ADC_DMA         STM32_DMA1_STREAM1
@@ -166,10 +166,12 @@
 #define UART_TXBUF_SZ   512
 #define UART_RXBUF_SZ   99
 
+#define CMD_UART        USART1
+
 #define UARTS_CNT       1
 
 #define CMD_UART_PARAMS \
-    USART1, UART_GPIO, UART_TX_PIN, UART_GPIO, UART_RX_PIN, \
+    CMD_UART, UART_GPIO, UART_TX_PIN, UART_GPIO, UART_RX_PIN, \
     UART_DMA_TX, UART_DMA_RX, UART_DMA_TX_MODE(UART_DMA_CHNL), UART_DMA_RX_MODE(UART_DMA_CHNL), true
 
 #endif
