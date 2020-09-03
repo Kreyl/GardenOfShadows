@@ -9,7 +9,7 @@
 
 // ==== General ====
 #define BOARD_NAME          "GSLeaf01"
-#define APP_NAME            "Portrait"
+#define APP_NAME            "CSTest"
 
 // MCU type as defined in the ST header.
 #define STM32L476xx
@@ -162,16 +162,15 @@
 #endif // DMA
 
 #if 1 // ========================== USART ======================================
-#define PRINTF_FLOAT_EN FALSE
-#define UART_TXBUF_SZ   512
-#define UART_RXBUF_SZ   99
+#define PRINTF_FLOAT_EN TRUE
+#define UART_TXBUF_SZ   4096
+#define UART_RXBUF_SZ   1024
+#define CMD_BUF_SZ      1024
 
 #define CMD_UART        USART1
 
-#define UARTS_CNT       1
-
 #define CMD_UART_PARAMS \
     CMD_UART, UART_GPIO, UART_TX_PIN, UART_GPIO, UART_RX_PIN, \
-    UART_DMA_TX, UART_DMA_RX, UART_DMA_TX_MODE(UART_DMA_CHNL), UART_DMA_RX_MODE(UART_DMA_CHNL), true
-
+    UART_DMA_TX, UART_DMA_RX, UART_DMA_TX_MODE(UART_DMA_CHNL), UART_DMA_RX_MODE(UART_DMA_CHNL), \
+    uartclkHSI // Use independent clock
 #endif

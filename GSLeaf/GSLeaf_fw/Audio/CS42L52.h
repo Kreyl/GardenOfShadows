@@ -1,7 +1,7 @@
 /*
  * CS42L52.h
  *
- *  Created on: 15 марта 2017 г.
+ *  Created on: 15 пїЅпїЅпїЅпїЅпїЅ 2017 пїЅ.
  *      Author: Kreyl
  */
 
@@ -96,6 +96,7 @@ public:
     void TransmitBuf(void *Buf, uint32_t Sz16);
     bool IsTransmitting();
     void Stop();
+    void StopDma();
 
     void StartStream();
     void PutSampleI(SampleStereo_t &Sample);

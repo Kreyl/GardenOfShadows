@@ -1,7 +1,7 @@
 /*
  * shell.h
  *
- *  Created on: 25 окт. 2015 г.
+ *  Created on: 25 пїЅпїЅпїЅ. 2015 пїЅ.
  *      Author: Kreyl
  */
 
@@ -10,9 +10,13 @@
 #include <cstring>
 #include <stdarg.h>
 #include "kl_lib.h"
+#include <string>
 
-#define CMD_BUF_SZ		99
 #define DELIMITERS      " ,"
+
+#define PRINT_REPLY     FALSE
+
+void Printf(const char *format, ...);
 
 enum ProcessDataResult_t {pdrProceed, pdrNewCmd};
 
@@ -100,7 +104,6 @@ public:
 class Shell_t {
 public:
 	Cmd_t Cmd;
-	virtual void SignalCmdProcessed() = 0;
 	virtual void Print(const char *format, ...) = 0;
 	void Reply(const char* CmdCode, int32_t Data) { Print("%S,%d\r\n", CmdCode, Data); }
 	void Ack(int32_t Result) { Print("Ack %d\r\n", Result); }
@@ -198,10 +201,121 @@ public:
 
 #endif
 
+#if 1 // ============================= Json cmd ================================
+#define JSON_CMD_BUF_SZ      1024
+class CmdJson_t {
+private:
+    uint32_t Sz = 0;
+    uint32_t ParenthesisCnt = 0;
+    systime_t StartTime = 0;
+public:
+    char IBuf[JSON_CMD_BUF_SZ];
+    ProcessDataResult_t PutChar(char c) {
+        if(chVTTimeElapsedSinceX(StartTime) >= TIME_MS2I(999)) Reset(); // Reset in case of timeout
+        if(Sz == 0 and c != '{') return pdrProceed;
+        if(Sz < (CMD_BUF_SZ-1)) IBuf[Sz++] = c;  // Add char if buffer not full
+        StartTime = chVTGetSystemTimeX(); // Restart timeout
+        if(c == '{') ParenthesisCnt++;
+        else if(c == '}') {
+            ParenthesisCnt--;
+            if(ParenthesisCnt == 0) return pdrNewCmd;
+        }
+        return pdrProceed;
+    }
+    void Reset() { Sz = 0; }
+};
+
+class ShellJson_t {
+private:
+    std::string IReply;
+public:
+    CmdJson_t Cmd;
+    virtual void Print(const char *format, ...) = 0;
+    virtual uint8_t ReceiveBinaryToBuf(uint8_t *ptr, uint32_t Len, uint32_t Timeout_ms) = 0;
+    void Reply(const char* CmdCode, char* Data) {
+        Print("{\"%S\": \"%S\"}\r\n", CmdCode, Data);
+#if PRINT_REPLY
+        Printf("{\"%S\": \"%S\"}\r\n", CmdCode, Data);
+#endif
+    }
+    void Result(const char* S) {
+        Print("{\"Result\": \"%S\"}\r\n", S);
+#if PRINT_REPLY
+        Printf("{\"Result\": \"%S\"}\r\n", S);
+#endif
+    }
+    void ResultOk() {
+        Print("{\"Result\": \"Ok\"}\r\n");
+#if PRINT_REPLY
+        Printf("{\"Result\": \"Ok\"}\r\n");
+#endif
+    }
+    void ResultBadValue() {
+        Print("{\"Result\": \"BadValue\"}\r\n");
+#if PRINT_REPLY
+        Printf("{\"Result\": \"BadValue\"}\r\n");
+#endif
+    }
+    void ResultWValue(const char* Rslt, const char* S) {
+        Print("{\"Result\": \"%S\", \"Value\": \"%S\"}\r\n", Rslt, S);
+#if PRINT_REPLY
+        Printf("{\"Result\": \"%S\", \"Value\": \"%S\"}\r\n", Rslt, S);
+#endif
+    }
+    void ResultWValue(const char* Rslt, uint32_t Value) {
+        Print("{\"Result\": \"%S\", \"Value\": \"%u\"}\r\n", Rslt, Value);
+#if PRINT_REPLY
+        Printf("{\"Result\": \"%S\", \"Value\": \"%u\"}\r\n", Rslt, Value);
+#endif
+    }
+    void ResultWValueHex(const char* Rslt, uint32_t Value) {
+        Print("{\"Result\": \"%S\", \"Value\": \"0x%X\"}\r\n", Rslt, Value);
+#if PRINT_REPLY
+        Printf("{\"Result\": \"%S\", \"Value\": \"0x%X\"}\r\n", Rslt, Value);
+#endif
+    }
+    // Construct reply
+    void ReplyStart() { IReply = "{"; }
+    void ReplyAddInt(const char* Name, int32_t Value) {
+        if(IReply.back() != '{') IReply += ',';
+        IReply +='\"';
+        IReply.append(Name);
+        IReply +="\":";
+        IReply += std::to_string(Value);
+
+    }
+    void ReplyAddString(const char* Name, const char* S) {
+        if(IReply.back() != '{') IReply += ',';
+        IReply +='\"';
+        IReply.append(Name);
+        IReply +="\":\"";
+        IReply.append(S);
+        IReply +='\"';
+    }
+    void ReplyAddArray(const char* Name, int32_t *Arr, int32_t Len) {
+        if(IReply.back() != '{') IReply += ',';
+        IReply +='\"';
+        IReply.append(Name);
+        IReply +="\":[";
+        while(Len--) {
+            if(IReply.back() != '[') IReply += ',';
+            IReply += std::to_string(*Arr++);
+        }
+        IReply +="]";
+    }
+    void ReplyCompleteAndSend() {
+        IReply += "}";
+        Print("%S\r\n", IReply.c_str());
+#if PRINT_REPLY
+        Printf("%S\r\n", IReply.c_str());
+#endif
+    }
+};
+#endif
+
 // Functions
 class CmdUart_t;
 
-void Printf(const char *format, ...);
 void Printf(CmdUart_t &AUart, const char *format, ...);
 void PrintfI(const char *format, ...);
 void PrintfEOL();

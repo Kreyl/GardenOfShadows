@@ -4,12 +4,9 @@ enum EvtMsgId_t {
     evtIdNone = 0, // Always
 
     // Pretending to eternity
-    evtIdShellCmd,
+    evtIdShellCmdRcvd,
     evtIdEverySecond,
 
-    evtIdPauseEnd,
-    evtIdCheckSns,
-
-    evtIdSoundPlayStop,
-
+    evtIdAudioBufEnd,
+    evtIdAudioPlayEnd,
 };

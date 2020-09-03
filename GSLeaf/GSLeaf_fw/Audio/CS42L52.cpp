@@ -1,7 +1,7 @@
 /*
  * CS42L52.cpp
  *
- *  Created on: 15 марта 2017 г.
+ *  Created on: 15 пїЅпїЅпїЅпїЅпїЅ 2017 пїЅ.
  *      Author: Kreyl
  */
 

@@ -1952,6 +1952,7 @@ enum AHBDiv_t {
 enum APBDiv_t {apbDiv1=0b000, apbDiv2=0b100, apbDiv4=0b101, apbDiv8=0b110, apbDiv16=0b111};
 enum MCUVoltRange_t {mvrHiPerf, mvrLoPerf};
 enum Src48MHz_t { src48None = 0b00, src48PllSai1Q = 0b01, src48PllQ = 0b10, src48Msi = 0b11 };
+enum SrcSaiClk_t { srcSaiPllSai1P = 0b00, srcSaiPllSai2P = 0b01, srcSaiPllP = 0b10, srcSaiExt = 0b11 };
 enum PllSrc_t { pllsrcNone = 0b00, pllsrcMsi = 0b01, pllsrcHsi16 = 0b10, pllsrcHse = 0b11 };
 
 enum McoSrc_t {mcoNone=0b0000, mcoSYSCLK=0b0001, mcoMSI=0b0010, mcoHSI16=0b0011, mcoHSE=0b0100, mcoMainPLL=0b0101, mcoLSI=0b0110, mcoLSE=0b0111 };
@@ -1979,6 +1980,7 @@ public:
     void EnableLSE()  { RCC->BDCR |= RCC_BDCR_LSEON; }
     void EnablePllROut() { RCC->PLLCFGR |= RCC_PLLCFGR_PLLREN; }
     void EnablePllQOut() { RCC->PLLCFGR |= RCC_PLLCFGR_PLLQEN; }
+    void EnablePllPOut() { RCC->PLLCFGR |= RCC_PLLCFGR_PLLPEN; }
     uint8_t EnablePllSai1();
     void EnablePllSai1QOut() { RCC->PLLSAI1CFGR |= RCC_PLLSAI1CFGR_PLLSAI1QEN; }
 
@@ -2023,6 +2025,13 @@ public:
     void SetCoreClk(CoreClk_t CoreClk);
 
     uint32_t GetSysClkHz();
+
+    void SelectSAI1Clk(SrcSaiClk_t ASrc) {
+        uint32_t tmp = RCC->CCIPR;
+        tmp &= ~RCC_CCIPR_SAI1SEL;
+        tmp |= ((uint32_t)ASrc) << 22;
+        RCC->CCIPR = tmp;
+    }
 
     // Setup independent clock
     void SetI2CClkSrc(I2C_TypeDef *i2c, i2cClk_t ClkSrc) {

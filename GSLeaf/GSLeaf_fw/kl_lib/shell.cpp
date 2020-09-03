@@ -1,12 +1,12 @@
 /*
  * shell.cpp
  *
- *  Created on: 21 апр. 2017 г.
+ *  Created on: 21 пїЅпїЅпїЅ. 2017 пїЅ.
  *      Author: Kreyl
  */
 
 #include "shell.h"
-#include "uart.h"
+#include "uart2.h"
 
 extern CmdUart_t Uart;
 

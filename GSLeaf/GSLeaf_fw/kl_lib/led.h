@@ -1,7 +1,7 @@
 /*
  * led_rgb.h
  *
- *  Created on: 31 àâã. 2014 ã.
+ *  Created on: 31 ï¿½ï¿½ï¿½. 2014 ï¿½.
  *      Author: Kreyl
  */
 
@@ -10,7 +10,7 @@
 #include "hal.h"
 #include "color.h"
 #include "ChunkTypes.h"
-#include "uart.h"
+#include "uart2.h"
 #include "kl_lib.h"
 
 #if 1 // ==================== LED on/off, no sequences =========================

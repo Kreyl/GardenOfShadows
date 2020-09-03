@@ -1,12 +1,12 @@
 /*
  * SimpleSensors.cpp
  *
- *  Created on: 17 ÿíâ. 2015 ã.
+ *  Created on: 17 ï¿½ï¿½ï¿½. 2015 ï¿½.
  *      Author: Kreyl
  */
 
 #include "SimpleSensors.h"
-#include "uart.h"
+#include "uart2.h"
 
 #if SIMPLESENSORS_ENABLED
 #include "PinSnsSettings.h"

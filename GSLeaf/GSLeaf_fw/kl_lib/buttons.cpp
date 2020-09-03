@@ -7,7 +7,7 @@
 
 #include "buttons.h"
 #include "ch.h"
-#include "uart.h"
+#include "uart2.h"
 #include "MsgQ.h"
 
 #if BUTTONS_ENABLED
